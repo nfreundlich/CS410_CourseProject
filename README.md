@@ -1,2 +1,2 @@
-# Dummy_CS410
+# CS410_CourseProject
 Test workflow for CS410

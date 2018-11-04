@@ -8,6 +8,7 @@ import math
 import pickle
 import os
 
+# Change working directory
 os.chdir('C:\\Users\\Project Code\\feature_mining\\demo_files')
 
 # Reference for counter speed: http://evanmuehlhausen.com/simple-counters-in-python-with-benchmarks/

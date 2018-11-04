@@ -4,13 +4,20 @@ from collections import Counter
 from collections import defaultdict
 from spacy.attrs import LOWER,ORTH
 import en_core_web_sm
+import math
+import pickle
+import os
+
+os.chdir('C:\\Users\\Project Code\\feature_mining\\demo_files')
 
 # Reference for counter speed: http://evanmuehlhausen.com/simple-counters-in-python-with-benchmarks/
 
 text_set = pd.read_csv('demo_files/sample_dataset_1_text.csv', skip_blank_lines=True, keep_default_na=False)
 text_set = text_set[text_set['sentence_id'] != '']
+text_set = text_set[text_set['sentence_id'].isin(['9', '10'])]
 
 feature_set = pd.read_csv('demo_files/sample_dataset_1_features.csv', skip_blank_lines=True)
+feature_set = feature_set[feature_set['feature_id'].isin([1,2])]
 
 feature_mapping = pd.read_csv('demo_files/sample_dataset_1_feature_mapping.csv', skip_blank_lines=True)
 
@@ -72,8 +79,88 @@ for index,row in text_set.iterrows():
             # if we count each words as many times as it occurs
             # featureCounter[row_f["feature_id"]].update(docWordList)
 
+# At this point we have all the counts we need to build the topic models
+
+####################################
+# Calculations for background model
+####################################
+
+# total number of words
+totalWordCount = sum(docCounts_All.values())
+
+# change counter to dictionary for calculations
+docCounts_All_dict = dict(docCounts_All)
+
+# calculate background model
+model_background = dict((k, v/totalWordCount) for k, v in docCounts_All_dict.items())
 
 
+
+
+###############################
+# Calculations for topic model
+###############################
+tfidf_topic = defaultdict(dict)
+model_topic_norms = Counter()
 
 # count of sentences
-len(docList)
+numSentences = len(docList)
+numWords = len(docCounts_All_dict)
+
+for word in docCounts_All_dict.keys():
+    print(word)
+
+    for index, row in feature_set.iterrows():
+        print(str(index)+ "-" + row["feature"])
+
+        tfidf = math.log(1 + featureCounter[index][word])*math.log(1+numSentences/sentenceCounter[word]) + 1
+        print(str(tfidf))
+
+        tfidf_topic[index][word] = tfidf
+
+        model_topic_norms[index] += tfidf
+
+# normalize values of all dictionaries with totals
+model_topic = defaultdict(dict)
+
+for index in model_topic_norms.keys():
+    print("normalizing " + str(index))
+
+    model_topic[index] = dict((k, v/(model_topic_norms[index])) for k, v in tfidf_topic[index].items())
+
+
+# list data that needs to be passed to to EM Algorithm
+
+# save data into file for Norbert to load up
+
+with open('model_background.data', 'wb') as filehandle:
+    # store the data as binary data stream
+    pickle.dump(model_background, filehandle)
+    filehandle.close()
+
+with open('model_topic.data', 'wb') as filehandle:
+    # store the data as binary data stream
+    pickle.dump(model_topic, filehandle)
+    filehandle.close()
+
+with open('docCounts.data', 'wb') as filehandle:
+    # store the data as binary data stream
+    pickle.dump(docCounts, filehandle)
+    filehandle.close()
+
+# test reload
+
+with open('model_background.data', 'rb') as filehandle:
+    # store the data as binary data stream
+    rd_model_background = pickle.load(filehandle)
+    filehandle.close()
+
+with open('model_topic.data', 'rb') as filehandle:
+    # store the data as binary data stream
+    rd_model_topic = pickle.load(filehandle)
+    filehandle.close()
+
+with open('docCounts.data', 'rb') as filehandle:
+    # store the data as binary data stream
+    rd_docCounts = pickle.load(filehandle)
+    filehandle.close()

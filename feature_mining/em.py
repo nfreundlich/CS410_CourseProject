@@ -67,12 +67,100 @@ class EM:
         np.save(self.dump_path + "MY_HPB_updated", self.hidden_parameters_background)
 
     def em_e_step_sparse(self):
+        #Notation:
+        #nw = number of words in vocabulary
+        #m  = number of sentences (lines) in all reviews
+        #na = number of aspects
+
+        m   = 2 # number of sentences (lines) in all reviews
+        nw  = 3 # number of words in vocabulary
+        na  = 4 # number of aspects
+
+        #Initialize reviews matrix:
+        #Sentence/Word | word 1 ... ... ... ... word nw
+        #---------------------------------------------------
+        #Sentence 1    | count(s_1,w_1) ... ...  count(s_1, w_nw)
+        #Sentence 2    | count(s_2,w_2) ... ...  count(s_2, w_nw)
+        #...    ...     ... ...     ...     ...     ...
+        #Sentence m    | count(s_m, w_1)... ...  count(s_m, w_nw)
+
+        # random review
+        # reviews = csr_matrix(np.random.randint(0, 3, m * nw).reshape(m, nw))
+        reviews = np.random.randint(0, 2, m * nw).reshape(m, nw)
+        print("reviews")
+        print(reviews)
+
+        # Compute binary reviews matrix (1 if word in sentence, 0 if not) (same dimensions as reviews)
+        reviews_binary = np.where(reviews > 0, 1, 0)
+        print("reviews_binary")
+        print(reviews_binary)
+
+        #Initialize topic model
+        #Word/Aspect    | aspect 1   ...     ...     aspect na
+        #-----------------------------------------------------
+        #word 1         | tm(w1,a1) ...      ...    tm(w1, a_na)
+        #...        ...             ....            ...     ...
+        #word nw        | tm(w_nw, a_na) ... ....   tm(w_na, a_na)
+
+        # random topic model
+        # topic_model = csr_matrix(np.random.randint(0, 3, nw * na).reshape(nw, na))
+        topic_model = np.random.random(nw * na).reshape(nw, na)
+        print("topic_model")
+        print(topic_model)
+
+        #Initialize pi
+        #Sentence/Aspect | aspect 1 ...      ...    aspect na
+        #-----------------------------------------------------
+        #Sentence 1      | pi(s1,a1)  ...   ...     pi(s1, a_na)
+        # ...        ...             ....            ...     ...
+        #Sentence m      | pi(sm,a1)  ...   ...     pi(sm, a_na)
+        pi = np.random.dirichlet((m, na), na).transpose()
+        print("pi")
+        print(pi)
+        print("sum of pi for each sentence")
+        print(pi.sum(axis=0))
+
+        #Initialize hidden_parameters FOR ONE SENTENCE
+        #Sentence/Word | word 1 ... ... ... ... word nw
+        #---------------------------------------------------
+        #Sentence 1    | 0.0        ...     ...   0.0
+        #Sentence 2    | 0.0    ...         ...   0.0
+        #...    ...     ... ...     ...     ...   ...
+        #Sentence m    | 0.0 ...             ...  0.0
+        hidden_parameters = []
+        for sentence in range(0, m):
+            hidden_parameters_one_sentence = np.zeros(m * nw).reshape(m, nw)
+            hidden_parameters.append(hidden_parameters_one_sentence)
+
+        print("hidden_parameters")
+        print(hidden_parameters)
+
+        #TODO: treat multiple sentences
+        # Compute topic model for sentence as review_binary[sentence_s]^T * topic_model
+        sentence = 0
+        topic_model_sentence = reviews_binary.T[:,sentence].reshape(nw,1) * topic_model
+        print("topic_model_sentence: " + str(sentence))
+        print(topic_model_sentence)
+
+        # Compute sum of review * topic_model for sentence_s
+        sentence_sum = pi[sentence].reshape(1,na).dot(topic_model_sentence.transpose())
+        print("sum")
+        print(sum)
+
+        #TODO: Compute hidden_parameters for sentence_s
+        #hidden parameters update
+        #TODO: update this, lots of ZERO sum
+        hidden_parameters_sentence = (topic_model_sentence *  pi[sentence]).transpose() / sentence_sum
+        print("hidden_parameters_sentence")
+        print(hidden_parameters_sentence)
+
+        # Example on sparse dot product
         A = csr_matrix([[1, 2, 0], [0, 0, 3], [4, 0, 5]])
         v = np.array([1, 0, -1])
         A.dot(v)
-
         np.save(self.dump_path + "MY_HP_Updated", A)
         np.save(self.dump_path + "MY_HPB_updated", A)
+
         pass
 
 

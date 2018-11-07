@@ -5,11 +5,19 @@ from scipy.sparse import csr_matrix
 
 class EM:
     def __init__(self, dump_path = "../tests/data/em_01/"):
+        self.dump_path = dump_path
+
+        # Parameters for EM execution
         self.max_iter = 50
         self.lambda_background = 0.7
         self.dist_threshold = 1e-6
 
-        self.dump_path = dump_path
+        # Parameters for Data size evaluation
+        self.m = 0
+        self.nw = 0
+        self.na = 0
+
+        # Parameters for EM internals
         self.reviews = np.load(self.dump_path + "Reviews.npy")
         self.hidden_parameters = np.load(self.dump_path + "HP.npy")
         self.hidden_parameters_background = np.load(self.dump_path + "HPB.npy")
@@ -17,10 +25,19 @@ class EM:
         self.topic_model = np.load(self.dump_path + 'TopicModel.npy').item()
         self.background_probability = np.load(self.dump_path + 'BackgroundProbability.npy').item()
 
+        # Temporary parameters for matrix testing
+        # TODO: update original parameters for this usage
+        self.aspects_map = {}
+        self.words_map = {}
+        self.reviews_matrix = np.array()
+        self.pi_matrix = np.array()
+        self.topic_model_matrix = ()
+
 
     def em_e_step_dense(self):
         """
-        E-Step of EM algo. Compute HP and BHP.
+        E-Step of EM algo, as implemented by ***Santu***.
+        Compute HP and BHP.
 
         Input:
             REVIEWS
@@ -66,11 +83,98 @@ class EM:
         np.save(self.dump_path + "MY_HP_Updated", self.hidden_parameters)
         np.save(self.dump_path + "MY_HPB_updated", self.hidden_parameters_background)
 
+    def em_prepare_data_for_testing(self):
+        """
+        Prepare data for testing vectorised solution.
+        Want to convert the photo of Santu's data for vectorised needs.
+        :return:
+        """
+        m = 0   # number of sentences (lines) in all reviews - 8799
+        nw = 0  # number of words in vocabulary - 7266
+        na = 0  # number of aspects - 9
+
+        for reviewNum in range(0, len(self.reviews)):
+            for lineNum in range(0, len(self.reviews[reviewNum])):
+                m += 1
+        for aspect in self.topic_model:
+            na += 1
+
+        words_dict = {}
+        for aspect in self.topic_model.keys():
+            print(aspect, len(self.topic_model[aspect]))
+            for word in self.topic_model[aspect]:
+                words_dict[word] = True
+        nw = len(words_dict.keys()) # 7266
+        word_list = sorted(words_dict.keys())
+        words_map = {}
+        for word_id in range(0, len(word_list)):
+            words_map[word_list[word_id]] = word_id
+
+        print("m", "nw", "na")
+        print(m, nw, na)
+
+        # initialize reviews with zeros
+        reviews_matrix = np.zeros(m * nw).reshape(m, nw)
+
+        # construct the review matrix with count values for each words
+        section_id = 0
+        for reviewNum in range(0, len(self.reviews)):
+            for lineNum in range(0, len(self.reviews[reviewNum])):
+                for word in self.reviews[reviewNum][lineNum]:
+                    reviews_matrix[section_id][words_map[word]] = self.reviews[reviewNum][lineNum][word]
+                section_id += 1
+        print("number of sections")
+        print(section_id)
+
+        # check first line
+        for i in range(0, len(reviews_matrix[0])):
+            if reviews_matrix[0][i] != 0:
+                print(i, reviews_matrix[0][i], word_list[i])
+
+        # construct the aspect map
+        current_aspect = 0
+        aspects_map = {}
+        for one_aspect in sorted(self.pi[0][0].keys()):
+            aspects_map[one_aspect] = current_aspect
+            current_aspect += 1
+
+        # initialize pi with zeros
+        # pi_matrix = np.random.dirichlet(np.ones(m), na).transpose()
+        pi_matrix = np.zeros(m * na).reshape(m, na)
+        section_id = 0
+        pi_matrix = np.zeros(m * na).reshape(m, na)
+        for reviewNum in range(0, len(self.reviews)):
+            for lineNum in range(0, len(self.reviews[reviewNum])):
+                for aspect in self.pi[reviewNum][lineNum]:
+                    pi_matrix[section_id][aspects_map[aspect]] = self.pi[reviewNum][lineNum][aspect]
+                section_id += 1
+
+        # initialize topic model with zeros
+        topic_model_matrix = np.zeros(nw * na).reshape(nw, na)
+        for aspect in self.topic_model:
+            for word in self.topic_model[aspect]:
+                topic_model_matrix[words_map[word]][aspects_map[aspect]] = self.topic_model[aspect][word]
+
+        # update class parameters with matrices
+        # TODO: clean this up to use only one set of input data
+        self.reviews_matrix = reviews_matrix
+        self.topic_model_matrix = topic_model_matrix
+        self.pi_matrix = pi_matrix
+        self.m = m
+        self.nw = nw
+        self.na = na
+
     def em_e_step_sparse(self):
-        #Notation:
-        #nw = number of words in vocabulary
-        #m  = number of sentences (lines) in all reviews
-        #na = number of aspects
+        """
+        Vectorised E-step of EM.
+        Needs intensive testing, at this stage.
+
+        :return:
+        """
+        # Notation:
+        # nw = number of words in vocabulary
+        # m  = number of sentences (lines) in all reviews
+        # na = number of aspects
 
         m   = 2 # number of sentences (lines) in all reviews
         nw  = 3 # number of words in vocabulary
@@ -114,7 +218,7 @@ class EM:
         #Sentence 1      | pi(s1,a1)  ...   ...     pi(s1, a_na)
         # ...        ...             ....            ...     ...
         #Sentence m      | pi(sm,a1)  ...   ...     pi(sm, a_na)
-        pi = np.random.dirichlet((m, na), na).transpose()
+        pi = np.random.dirichlet(np.ones(m), na).transpose()
         print("pi")
         print(pi)
         print("sum of pi for each sentence")
@@ -144,26 +248,29 @@ class EM:
 
         # Compute sum of review * topic_model for sentence_s
         sentence_sum = pi[sentence].reshape(1,na).dot(topic_model_sentence.transpose())
-        print("sum")
-        print(sum)
+        print("sentence_sum")
+        print(sentence_sum)
 
-        #TODO: Compute hidden_parameters for sentence_s
-        #hidden parameters update
-        #TODO: update this, lots of ZERO sum
-        hidden_parameters_sentence = (topic_model_sentence *  pi[sentence]).transpose() / sentence_sum
+        # We will have 0 values for sentence_sum, for missing words
+        # To avoid division by 0, sentence_sum(word) = 1
+        sentence_sum = np.where(sentence_sum == 0, 1, sentence_sum)
+        print("sentence_sum, identity for multiplication/division")
+        print(sentence_sum)
+
+        # Compute hidden_parameters for sentence_s
+        hidden_parameters_sentence = (topic_model_sentence * pi[sentence]).transpose() / sentence_sum
         print("hidden_parameters_sentence")
         print(hidden_parameters_sentence)
 
-        # Example on sparse dot product
-        A = csr_matrix([[1, 2, 0], [0, 0, 3], [4, 0, 5]])
-        v = np.array([1, 0, -1])
-        A.dot(v)
-        np.save(self.dump_path + "MY_HP_Updated", A)
-        np.save(self.dump_path + "MY_HPB_updated", A)
+        # TODO: Compute hidden_parameters_background
+        hidden_parameters_background = ['todo']
 
-        pass
+        # Example on sparse dot product
+        np.save(self.dump_path + "MY_HP_Updated", hidden_parameters)
+        np.save(self.dump_path + "MY_HPB_updated", hidden_parameters)
 
 
 if __name__ == '__main__':
     em = EM()
+    em.em_prepare_data_for_testing()
     em.em_e_step_dense()

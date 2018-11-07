@@ -29,10 +29,9 @@ class EM:
         # TODO: update original parameters for this usage
         self.aspects_map = {}
         self.words_map = {}
-        self.reviews_matrix = np.array()
-        self.pi_matrix = np.array()
+        self.reviews_matrix = np.array([])
+        self.pi_matrix = np.array([])
         self.topic_model_matrix = ()
-
 
     def em_e_step_dense(self):
         """
@@ -163,6 +162,17 @@ class EM:
         self.m = m
         self.nw = nw
         self.na = na
+        self.aspects_map = aspects_map
+        self.words_map = words_map
+
+    def em_prepare_data_for_testing_dummy(self):
+        self.m = 2
+        self.nw = 3
+        self.na = 4
+
+        self.reviews_matrix = np.random.randint(0, 2, self.m * self.nw).reshape(self.m, self.nw)
+        self.topic_model = np.random.random(self.nw * self.na).reshape(self.nw, self.na)
+        self.pi_matrix = np.random.dirichlet(np.ones(self.na), self.m)
 
     def em_e_step_sparse(self):
         """
@@ -176,9 +186,9 @@ class EM:
         # m  = number of sentences (lines) in all reviews
         # na = number of aspects
 
-        m   = 2 # number of sentences (lines) in all reviews
-        nw  = 3 # number of words in vocabulary
-        na  = 4 # number of aspects
+        m   = self.m # 2 # number of sentences (lines) in all reviews
+        nw  = self.nw # 3 # number of words in vocabulary
+        na  = self.na #4 # number of aspects
 
         #Initialize reviews matrix:
         #Sentence/Word | word 1 ... ... ... ... word nw
@@ -190,7 +200,7 @@ class EM:
 
         # random review
         # reviews = csr_matrix(np.random.randint(0, 3, m * nw).reshape(m, nw))
-        reviews = np.random.randint(0, 2, m * nw).reshape(m, nw)
+        reviews = self.reviews_matrix # np.random.randint(0, 2, m * nw).reshape(m, nw)
         print("reviews")
         print(reviews)
 
@@ -208,7 +218,7 @@ class EM:
 
         # random topic model
         # topic_model = csr_matrix(np.random.randint(0, 3, nw * na).reshape(nw, na))
-        topic_model = np.random.random(nw * na).reshape(nw, na)
+        topic_model = self.topic_model_matrix # np.random.random(nw * na).reshape(nw, na)
         print("topic_model")
         print(topic_model)
 
@@ -218,11 +228,12 @@ class EM:
         #Sentence 1      | pi(s1,a1)  ...   ...     pi(s1, a_na)
         # ...        ...             ....            ...     ...
         #Sentence m      | pi(sm,a1)  ...   ...     pi(sm, a_na)
-        pi = np.random.dirichlet(np.ones(m), na).transpose()
+        #TODO:::: REDO HERE!!! Sum of probabilities of all aspects for a sentence should be 1!
+        pi = self.pi_matrix # np.random.dirichlet(np.ones(na), m)
         print("pi")
         print(pi)
         print("sum of pi for each sentence")
-        print(pi.sum(axis=0))
+        print(pi.sum(axis=1))
 
         #Initialize hidden_parameters FOR ONE SENTENCE
         #Sentence/Word | word 1 ... ... ... ... word nw
@@ -237,7 +248,7 @@ class EM:
             hidden_parameters.append(hidden_parameters_one_sentence)
 
         print("hidden_parameters")
-        print(hidden_parameters)
+        print(hidden_parameters[0])
 
         #TODO: treat multiple sentences
         # Compute topic model for sentence as review_binary[sentence_s]^T * topic_model
@@ -273,4 +284,5 @@ class EM:
 if __name__ == '__main__':
     em = EM()
     em.em_prepare_data_for_testing()
-    em.em_e_step_dense()
+    # em.em_e_step_dense()
+    em.em_e_step_sparse()

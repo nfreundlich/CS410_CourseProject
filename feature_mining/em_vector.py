@@ -14,15 +14,18 @@ class ExpectationMaximizationVector(ExpectationMaximization):
 
     def import_data(self):
         print(type(self).__name__, '- import data...')
-        #self.reviews = np.load(self.dump_path + "Reviews.npy")
-        #self.topic_model = np.load(self.dump_path + 'TopicModel.npy').item()
-        #self.background_probability = np.load(self.dump_path + 'BackgroundProbability.npy').item()
+        self.reviews = np.load(self.dump_path + "Reviews.npy")
+        self.topic_model = np.load(self.dump_path + 'TopicModel.npy').item()
+        self.background_probability = np.load(self.dump_path + 'BackgroundProbability.npy').item()
+        # TODO: from em.py, adapt em_prepare_data_for_testing
 
     def initialize_parameters(self):
         print(type(self).__name__, '- initialize parameters...')
-        #self.hidden_parameters = np.load(self.dump_path + "HP.npy")
-        #self.hidden_parameters_background = np.load(self.dump_path + "HPB.npy")
-        #self.pi = np.load(self.dump_path + "PI.npy")
+        # TODO: from em.py, adapt first part of em_e_step_sparse
+
+    def e_step(self):
+        print(type(self).__name__, '- e_step...')
+        # TODO: from em.py, adapt second part of em_e_step_sparse
 
 
 if __name__ == '__main__':

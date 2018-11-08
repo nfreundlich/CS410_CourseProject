@@ -43,10 +43,10 @@ class AdvancedTestSuite(unittest.TestCase):
         dump_path = "./tests/data/em_01/"
         em = EM(dump_path=dump_path)
         em.em_e_step_sparse()
-        HPB_Updated_by_Santu = np.load(dump_path + "HPB_updated.npy")
-        HPB_Updated_by_E_Step_Dense = np.load(dump_path + "MY_HPB_Updated.npy")
+        hpb_updated_by_santu = np.load(dump_path + "HPB_updated.npy")
+        hpb_updated_by_e_step_dense = np.load(dump_path + "MY_HPB_Updated.npy")
 
-        self.assertEqual(HPB_Updated_by_Santu.all(), HPB_Updated_by_E_Step_Dense.all())
+        self.assertEqual(hpb_updated_by_santu.all(), hpb_updated_by_e_step_dense.all())
 
     def test_ExpectationMinimizationOriginal_E_Step(self):
         dump_path = "./tests/data/em_01/"
@@ -60,6 +60,17 @@ class AdvancedTestSuite(unittest.TestCase):
 
         self.assertEqual(hp_updated_by_santu.all(), hp_updated_by_expectation_minimization_original.all())
 
+    def test_ExpectationMinimizationOriginal_E_Step_Background(self):
+        dump_path = "./tests/data/em_01/"
+
+        em = ExpectationMinimizationOriginal(dump_path=dump_path)
+        em.em()
+        em._dump_hidden_parameters()
+
+        hpb_updated_by_santu = np.load(dump_path + "HPB_updated.npy")
+        hpb_updated_by_expectation_minimization_original = np.load(dump_path + "MY_HPB_Updated.npy")
+
+        self.assertEqual(hpb_updated_by_santu.all(), hpb_updated_by_expectation_minimization_original.all())
 
 if __name__ == '__main__':
     unittest.main()

@@ -21,14 +21,14 @@ class ExpectationMaximization:
         self.na = 0
 
         # Parameters computed from collection
-        self.reviews = None  # np.load(self.dump_path + "Reviews.npy")
-        self.topic_model = None  # np.load(self.dump_path + 'TopicModel.npy').item()
-        self.background_probability = None  # np.load(self.dump_path + 'BackgroundProbability.npy').item()
+        self.reviews = None
+        self.topic_model = None
+        self.background_probability = None
 
         # Parameters for EM computation
-        self.hidden_parameters = None  # np.load(self.dump_path + "HP.npy")
-        self.hidden_parameters_background = None  # np.load(self.dump_path + "HPB.npy")
-        self.pi = None  # np.load(self.dump_path + "PI.npy")
+        self.hidden_parameters = None
+        self.hidden_parameters_background = None
+        self.pi = None
 
         # Parameters for matrix result interpretation
         self.aspects_map = {}

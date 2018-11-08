@@ -181,7 +181,7 @@ class EM:
 
     def em_e_step_sparse(self):
         """
-        Vectorised E-step of EM.
+        Vectorized E-step of EM.
         Needs intensive testing, at this stage.
 
         :return:
@@ -294,17 +294,6 @@ class EM:
         # Example on sparse dot product
         np.save(self.dump_path + "MY_HP_Updated", m)
         np.save(self.dump_path + "MY_HPB_updated", m)
-
-#    def em_e_step_sparse_to_delete(self):
-#        topic_model_sentence = reviews_binary[sentence].reshape(nw, 1).multiply(
-#            topic_model)  ##TODO: can be extracted from here in prep part for all sentences#
-#
-#
-#        for sentence in range(0, m):
-#            sentence_sum = topic_model_sentence.dot(pi[sentence])
-#            sentence_sum = np.where(sentence_sum == 0, 1, sentence_sum)
-#            hidden_parameters_sentence = ((topic_model_sentence.multiply(pi[sentence])).T / sentence_sum).T
-#            hidden_parameters_background = ['todo'] # TODO
 
 
 if __name__ == '__main__':

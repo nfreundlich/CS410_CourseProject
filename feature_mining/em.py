@@ -1,4 +1,3 @@
-import sys, os
 import numpy as np
 from scipy.sparse import csr_matrix
 
@@ -167,6 +166,11 @@ class EM:
         self.words_list = word_list
 
     def em_prepare_data_for_testing_dummy(self):
+        """
+        Prepare dummy data for implementation purposes.
+        TODO: delete this
+        :return:
+        """
         self.m = 2
         self.nw = 3
         self.na = 4
@@ -233,7 +237,6 @@ class EM:
         #Sentence 1      | pi(s1,a1)  ...   ...     pi(s1, a_na)
         # ...        ...             ....            ...     ...
         #Sentence m      | pi(sm,a1)  ...   ...     pi(sm, a_na)
-        #TODO:::: REDO HERE!!! Sum of probabilities of all aspects for a sentence should be 1!
         pi = self.pi_matrix # np.random.dirichlet(np.ones(na), m)
         print("pi")
         print(pi)
@@ -256,75 +259,52 @@ class EM:
         print(hidden_parameters[0])
 
         #TODO: treat multiple sentences
-        # Compute topic model for sentence as review_binary[sentence_s]^T * topic_model
-        sentence = 0
-        # topic_model_sentence = reviews_binary.T[:,sentence].reshape(nw,1) * topic_model -- method with dummy data
-        topic_model_sentence = reviews_binary[sentence].reshape(nw,1).multiply(topic_model)
-        print("topic_model_sentence: " + str(sentence))
-        print(topic_model_sentence)
+        print(100 * '*', "Start one sentence.")
+        for sentence in range(0, 1): # TODO: replace with 'm' (now not needed)
+            # Compute topic model for sentence as review_binary[sentence_s]^T * topic_model
+            # sentence = 0
+            # topic_model_sentence = reviews_binary.T[:,sentence].reshape(nw,1) * topic_model -- method with dummy data
+            topic_model_sentence = reviews_binary[sentence].reshape(nw,1).multiply(topic_model)
+            print("topic_model_sentence: " + str(sentence))
+            print(topic_model_sentence)
 
-        # Compute sum of review * topic_model for sentence_s
-        # sentence_sum = pi[sentence].reshape(1,na).dot(topic_model_sentence.transpose()) -- method with dummy data
-        sentence_sum = topic_model_sentence.dot(pi[sentence])
-        print("snp.where(sentence_sum > 0)")
-        print(np.where(sentence_sum > 0))
+            # Compute sum of review * topic_model for sentence_s
+            # sentence_sum = pi[sentence].reshape(1,na).dot(topic_model_sentence.transpose()) -- method with dummy data
+            sentence_sum = topic_model_sentence.dot(pi[sentence])
+            print("snp.where(sentence_sum > 0)")
+            print(np.where(sentence_sum > 0))
 
-        # We will have 0 values for sentence_sum, for missing words
-        # To avoid division by 0, sentence_sum(word) = 1
-        sentence_sum = np.where(sentence_sum == 0, 1, sentence_sum)
-        print("np.where(sentence_sum < 1), identity for multiplication/division")
-        print(np.where(sentence_sum < 1)) # only computed sums
+            # We will have 0 values for sentence_sum, for missing words
+            # To avoid division by 0, sentence_sum(word) = 1
+            sentence_sum = np.where(sentence_sum == 0, 1, sentence_sum)
+            print("np.where(sentence_sum < 1), identity for multiplication/division")
+            print(np.where(sentence_sum < 1)) # only computed sums
 
-        # Compute hidden_parameters for sentence_s
-        # hidden_parameters_sentence = (topic_model_sentence * pi[sentence]).transpose() / sentence_sum -- method with dummy data
-        hidden_parameters_sentence = ((topic_model_sentence.multiply(pi[sentence])).T / sentence_sum).T # TODO: not optimal! Redox!
-        print("hidden_parameters_sentence")
-        print(hidden_parameters_sentence)
+            # Compute hidden_parameters for sentence_s
+            # hidden_parameters_sentence = (topic_model_sentence * pi[sentence]).transpose() / sentence_sum -- method with dummy data
+            hidden_parameters_sentence = ((topic_model_sentence.multiply(pi[sentence])).T / sentence_sum).T # TODO: not optimal! Redox!
+            print("hidden_parameters_sentence")
+            print(hidden_parameters_sentence)
 
-        '''
-for i in np.where(reviews[sentence].todense() > 0)[1]:
-    print(em.aspects_map.keys())
-    print(word_list[i], hidden_parameters_sentence[i])
-        
-dict_keys(['battery', 'button', 'headphones', 'price', 'screen', 'size', 'software', 'sound', 'storage'])
-GB [[0.16279447 0.0025804  0.03944819 0.11466597 0.16928515 0.00958067
-  0.04880046 0.25526435 0.19758034]]
-dict_keys(['battery', 'button', 'headphones', 'price', 'screen', 'size', 'software', 'sound', 'storage'])
-I [[0.12705447 0.00610031 0.05580781 0.05934721 0.27663855 0.00689146
-  0.06640865 0.26729379 0.13445776]]
-dict_keys(['battery', 'button', 'headphones', 'price', 'screen', 'size', 'software', 'sound', 'storage'])
-Nano [[0.14939639 0.0019929  0.05861404 0.07553192 0.31078625 0.0084954
-  0.07674186 0.18892766 0.1295136 ]]
-dict_keys(['battery', 'button', 'headphones', 'price', 'screen', 'size', 'software', 'sound', 'storage'])
-iPod [[0.1291257  0.0053575  0.05385322 0.06656985 0.27662866 0.00542618
-  0.06980449 0.26575351 0.12748088]]
-dict_keys(['battery', 'button', 'headphones', 'price', 'screen', 'size', 'software', 'sound', 'storage'])
-pleased [[0.05185843 0.00653626 0.02874464 0.13352919 0.12335271 0.00327903
-  0.03555934 0.53306191 0.08407848]]
-dict_keys(['battery', 'button', 'headphones', 'price', 'screen', 'size', 'software', 'sound', 'storage'])
-purchase [[0.13109168 0.00234177 0.05286881 0.05004636 0.22687744 0.00603098
-  0.04596653 0.37609063 0.1086858 ]]
-  
-  
-###santu's first iteration, on em_sentence
- for key in updatedhp[0][0]:
-    print(key, updatedhp[0][0][key])
-    
-I {'sound': 0.2672937858438519, 'battery': 0.1270544678597472, 'screen': 0.27663855251249303, 'headphones': 0.05580780692718888, 'software': 0.0664086462933959, 'size': 0.006891456151221802, 'price': 0.059347212652911964, 'storage': 0.13445775908871987, 'button': 0.00610031267046968}
-pleased {'sound': 0.5330619072767221, 'battery': 0.0518584319923281, 'screen': 0.12335271465749757, 'headphones': 0.028744642221866675, 'software': 0.03555934483644542, 'size': 0.0032790289679597907, 'price': 0.13352919112632508, 'storage': 0.08407847762705724, 'button': 0.006536261293797957}
-GB {'sound': 0.2552643520896477, 'battery': 0.16279447111752765, 'screen': 0.1692851518005996, 'headphones': 0.039448188355592544, 'software': 0.04880045895448517, 'size': 0.009580672874032383, 'price': 0.11466596993259483, 'storage': 0.19758033730645586, 'button': 0.0025803975690643134}
-iPod {'sound': 0.26575351104834527, 'battery': 0.12912569762197348, 'screen': 0.2766286607090805, 'headphones': 0.05385322481564878, 'software': 0.06980449453972293, 'size': 0.005426176256144518, 'price': 0.06656985030229348, 'storage': 0.1274808823649425, 'button': 0.005357502341848541}
-Nano {'sound': 0.18892765645559806, 'battery': 0.14939638521093326, 'screen': 0.3107862473019515, 'headphones': 0.05861403696637266, 'software': 0.07674185652674255, 'size': 0.00849540030815739, 'price': 0.07553192435225868, 'storage': 0.12951359500872292, 'button': 0.001992897869262857}
-purchase {'sound': 0.37609063454881636, 'battery': 0.1310916790527423, 'screen': 0.22687744132514928, 'headphones': 0.052868807121202475, 'software': 0.04596652913076301, 'size': 0.006030979572256577, 'price': 0.050046355875500846, 'storage': 0.10868579859641375, 'button': 0.002341774777155295}
- 
-  '''
+            # TODO: Compute hidden_parameters_background
+            hidden_parameters_background = ['todo']
 
-        # TODO: Compute hidden_parameters_background
-        hidden_parameters_background = ['todo']
+            print(30*'*', 'Done one sentence')
 
         # Example on sparse dot product
-        np.save(self.dump_path + "MY_HP_Updated", hidden_parameters)
-        np.save(self.dump_path + "MY_HPB_updated", hidden_parameters)
+        np.save(self.dump_path + "MY_HP_Updated", m)
+        np.save(self.dump_path + "MY_HPB_updated", m)
+
+#    def em_e_step_sparse_to_delete(self):
+#        topic_model_sentence = reviews_binary[sentence].reshape(nw, 1).multiply(
+#            topic_model)  ##TODO: can be extracted from here in prep part for all sentences#
+#
+#
+#        for sentence in range(0, m):
+#            sentence_sum = topic_model_sentence.dot(pi[sentence])
+#            sentence_sum = np.where(sentence_sum == 0, 1, sentence_sum)
+#            hidden_parameters_sentence = ((topic_model_sentence.multiply(pi[sentence])).T / sentence_sum).T
+#            hidden_parameters_background = ['todo'] # TODO
 
 
 if __name__ == '__main__':

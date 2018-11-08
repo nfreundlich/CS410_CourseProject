@@ -30,7 +30,6 @@ class ExpectationMaximization:
         self.hidden_parameters_background = None
         self.pi = None
 
-
     def import_data(self):
         print(type(self).__name__, "- base import data...")
 

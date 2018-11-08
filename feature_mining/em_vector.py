@@ -23,6 +23,7 @@ class ExpectationMaximizationVector(ExpectationMaximization):
         self.pi_matrix = np.array([])
         self.topic_model_matrix = ()
         self.reviews_binary = np.array([])
+        self.hidden_parameters_one_sentence_for_testing = {}
 
     def import_data(self):
         print(type(self).__name__, '- import data...')
@@ -169,14 +170,23 @@ class ExpectationMaximizationVector(ExpectationMaximization):
 
 
             # TODO: Delete this part once verifications are done
+            self.hidden_parameters_one_sentence_for_testing = hidden_parameters_sentence
             print("Values computed by e_step_vector:")
-            print(em.aspects_map.keys())
+            print(self.aspects_map.keys())
             for i in np.where(self.reviews_matrix[sentence].todense() > 0)[1]:
                 print(self.words_list[i], hidden_parameters_sentence[i])
             print("Values computed by e_step_original")
             hp_updated_by_santu = np.load(self.dump_path + "HP_updated.npy")
             for key in hp_updated_by_santu[0][0]:
                 print(key, hp_updated_by_santu[0][0][key])
+            aspects_list = []
+            for k, v in self.aspects_map.items():
+                aspects_list.append(k)
+            for i in np.where(self.reviews_matrix[sentence].todense() > 0)[1]:
+                print(self.words_list[i])
+                for j in range(0, len(np.array(hidden_parameters_sentence[i]).squeeze())):
+                    print(aspects_list[j], np.array(hidden_parameters_sentence[i]).squeeze()[j])
+                    print(hp_updated_by_santu[0][0][self.words_list[i]][aspects_list[j]])
 
             print(30 * '*', 'Done one sentence', 30 * '*')
 

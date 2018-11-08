@@ -3,7 +3,7 @@ from scipy.sparse import csr_matrix
 from feature_mining.em_base import ExpectationMaximization
 
 
-class ExpectationMinimizationOriginal(ExpectationMaximization):
+class ExpectationMaximizationOriginal(ExpectationMaximization):
     """
     Original EM Algorithm as developed by Santu.
     """
@@ -71,5 +71,5 @@ class ExpectationMinimizationOriginal(ExpectationMaximization):
 
 
 if __name__ == '__main__':
-    em = ExpectationMinimizationOriginal()
+    em = ExpectationMaximizationOriginal()
     em.em()

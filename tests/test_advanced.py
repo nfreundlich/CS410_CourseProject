@@ -3,11 +3,12 @@
 from .context import feature_mining
 from feature_mining import EM
 from feature_mining import ExpectationMaximization
-from feature_mining import ExpectationMinimizationOriginal
+from feature_mining import ExpectationMaximizationOriginal
+from feature_mining import ExpectationMaximizationVector
 import numpy as np
 
 import unittest
-
+from unittest import TestSuite
 
 class AdvancedTestSuite(unittest.TestCase):
     """Advanced test cases."""
@@ -19,39 +20,41 @@ class AdvancedTestSuite(unittest.TestCase):
         print(os.getcwd())
         self.assertIsNone(None)
 
-    def test_EM_Santu_E_Step_HP(self):
+    def test_em_vector_e_step_hp_01(self):
         dump_path = "./tests/data/em_01/"
-        em = EM(dump_path=dump_path)
-        em.em_e_step_dense()
-        HP_Updated_by_Santu = np.load(dump_path + "HP_updated.npy")
-        HPB_Updated_by_Santu = np.load(dump_path + "HPB_updated.npy")
-        HP_Updated_by_E_Step_Dense = np.load(dump_path + "MY_HP_Updated.npy")
-        HPB_Updated_by_E_Step_Dense = np.load(dump_path + "MY_HPB_Updated.npy")
+        em = ExpectationMaximizationVector(dump_path=dump_path)
+        em.em()
 
-        self.assertEqual(HP_Updated_by_Santu.all(), HP_Updated_by_E_Step_Dense.all())
+        hp_updated_by_santu = np.load(dump_path + "HP_updated.npy")
+        hp_em_vector_one_sentence_for_testing = em.hidden_parameters_one_sentence_for_testing
 
-    def test_EM_Santu_E_Step_HPB(self):
+        print("Values computed by e_step_vector:")
+        sentence = 0
+        print(em.aspects_map.keys())
+        for i in np.where(em.reviews_matrix[sentence].todense() > 0)[1]:
+            print(em.words_list[i], hp_em_vector_one_sentence_for_testing[i])
+        print("Values computed by e_step_original")
+        for key in hp_updated_by_santu[0][0]:
+            print(key, hp_updated_by_santu[0][0][key])
+
+        first_step_ok = True
+        aspects_list = []
+        for k, v in em.aspects_map.items():
+            aspects_list.append(k)
+        for i in np.where(em.reviews_matrix[sentence].todense() > 0)[1]:
+            print(em.words_list[i])
+            for j in range(0, len(np.array(hp_em_vector_one_sentence_for_testing[i]).squeeze())):
+                print(aspects_list[j], np.array(hp_em_vector_one_sentence_for_testing[i]).squeeze()[j])
+                print(hp_updated_by_santu[0][0][em.words_list[i]][aspects_list[j]])
+                if np.array(hp_em_vector_one_sentence_for_testing[i]).squeeze()[j] - hp_updated_by_santu[0][0][em.words_list[i]][aspects_list[j]] > 0.001:
+                    first_step_ok = False
+                    break
+        self.assertEqual(True, first_step_ok)
+
+    def test_em_original_e_step_hp(self):
         dump_path = "./tests/data/em_01/"
-        em = EM(dump_path=dump_path)
-        em.em_e_step_dense()
-        HPB_Updated_by_Santu = np.load(dump_path + "HPB_updated.npy")
-        HPB_Updated_by_E_Step_Dense = np.load(dump_path + "MY_HPB_Updated.npy")
 
-        self.assertEqual(HPB_Updated_by_Santu.all(), HPB_Updated_by_E_Step_Dense.all())
-
-    def test_EM_E_Step_HPB(self):
-        dump_path = "./tests/data/em_01/"
-        em = EM(dump_path=dump_path)
-        em.em_e_step_sparse()
-        hpb_updated_by_santu = np.load(dump_path + "HPB_updated.npy")
-        hpb_updated_by_e_step_dense = np.load(dump_path + "MY_HPB_Updated.npy")
-
-        self.assertEqual(hpb_updated_by_santu.all(), hpb_updated_by_e_step_dense.all())
-
-    def test_ExpectationMinimizationOriginal_E_Step(self):
-        dump_path = "./tests/data/em_01/"
-
-        em = ExpectationMinimizationOriginal(dump_path=dump_path)
+        em = ExpectationMaximizationOriginal(dump_path=dump_path)
         em.em()
         em._dump_hidden_parameters()
 
@@ -60,10 +63,10 @@ class AdvancedTestSuite(unittest.TestCase):
 
         self.assertEqual(hp_updated_by_santu.all(), hp_updated_by_expectation_minimization_original.all())
 
-    def test_ExpectationMinimizationOriginal_E_Step_Background(self):
+    def test_em_original_e_step_hpb(self):
         dump_path = "./tests/data/em_01/"
 
-        em = ExpectationMinimizationOriginal(dump_path=dump_path)
+        em = ExpectationMaximizationOriginal(dump_path=dump_path)
         em.em()
         em._dump_hidden_parameters()
 
@@ -74,3 +77,6 @@ class AdvancedTestSuite(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+    #https://stackoverflow.com/questions/1068246/python-unittest-how-to-run-only-part-of-a-test-file
+    #suite = eval(sys.argv[1])  # Be careful with this line!
+    #unittest.TextTestRunner().run(suite)

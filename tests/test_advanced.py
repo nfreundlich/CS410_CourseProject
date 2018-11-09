@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from .context import feature_mining
-from feature_mining import EM
 from feature_mining import ExpectationMaximization
 from feature_mining import ExpectationMaximizationOriginal
 from feature_mining import ExpectationMaximizationVector

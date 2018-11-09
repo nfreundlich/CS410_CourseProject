@@ -32,6 +32,7 @@ class ExpectationMaximizationVector(ExpectationMaximization):
         self.import_data_temporary() # TODO: deactivate this when our data is available
 
     def import_data_temporary(self):
+        # TODO: this should be deleted once the implementation is safe
         print(type(self).__name__, '- import data ********temporary********...')
         self.reviews = np.load(self.dump_path + "Reviews.npy")
         self.topic_model = np.load(self.dump_path + 'TopicModel.npy').item()
@@ -40,7 +41,6 @@ class ExpectationMaximizationVector(ExpectationMaximization):
         self.hidden_parameters_background = np.load(self.dump_path + "HPB.npy")
         self.pi = np.load(self.dump_path + "PI.npy")
 
-        # TODO: from em.py, adapt em_prepare_data_for_testing
         """
         Prepare data for testing vectorised solution.
         Want to convert the photo of Santu's data for vectorised needs.

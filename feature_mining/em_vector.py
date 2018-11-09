@@ -24,6 +24,7 @@ class ExpectationMaximizationVector(ExpectationMaximization):
         self.topic_model_matrix = ()
         self.reviews_binary = np.array([])
         self.hidden_parameters_one_sentence_for_testing = {}
+        self.hidden_parameters_background_one_sentence_for_testing = {}
         self.expose_sentence_sum_for_testing = None
 
     def import_data(self):
@@ -180,12 +181,19 @@ class ExpectationMaximizationVector(ExpectationMaximization):
                         (topic_model_sentence.multiply(self.pi_matrix[sentence])).T / sentence_sum).T
 
             # TODO: Compute hidden_parameters_background
-            hidden_parameters_background = self.lambda_background * self.background_probability.squeeze() / \
-                        (self.lambda_background * self.background_probability.squeeze() +
-                         (1 - self.lambda_background) * sentence_sum)
+            background_probability = self.lambda_background * \
+                                     self.reviews_binary[sentence].T.multiply(
+                                         self.background_probability.reshape(self.nw, 1))
 
+            # TODO: Optimize this, test sparse implementation
+            hidden_parameters_background_sentence = background_probability / \
+                                                    (background_probability +
+                                                     ((1 - self.lambda_background) * sentence_sum).reshape(self.nw, 1))
+
+            # Only used for testing during implementation. To be deleted.
             self.hidden_parameters_one_sentence_for_testing = hidden_parameters_sentence
             self.expose_sentence_sum_for_testing = sentence_sum
+            self.hidden_parameters_background_one_sentence_for_testing = hidden_parameters_background_sentence
             print(30 * '*', "End sentence:", sentence, ' ', 30 * '*')
 
 

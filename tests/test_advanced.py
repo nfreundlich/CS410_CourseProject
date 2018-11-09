@@ -53,6 +53,23 @@ class AdvancedTestSuite(unittest.TestCase):
                     break
         self.assertEqual(True, first_step_ok)
 
+    def test_em_vector_e_step_bhp_01(self):
+        dump_path = "./tests/data/em_01/"
+        em = ExpectationMaximizationVector(dump_path=dump_path)
+        em.em()
+
+        hp_background_em_vector = em.hidden_parameters_background_one_sentence_for_testing
+        hpb_updated_by_expectation_minimization_original = np.load(dump_path + "MY_HPB_Updated.npy")
+
+        background_one_sentence_ok = True
+        for i in np.where(hp_background_em_vector > 0)[0]:
+            print(em.words_list[i], hp_background_em_vector[i].item())
+            print(hpb_updated_by_expectation_minimization_original[0][0][em.words_list[i]])
+            if hp_background_em_vector[i].item() - hpb_updated_by_expectation_minimization_original[0][0][em.words_list[i]] > 0.001:
+                background_one_sentence_ok = False
+
+        self.assertEqual(True, background_one_sentence_ok)
+
     def test_em_original_e_step_hp(self):
         dump_path = "./tests/data/em_01/"
 

@@ -1,5 +1,4 @@
 import numpy as np
-from scipy.sparse import csr_matrix
 from feature_mining.em_base import ExpectationMaximization
 
 
@@ -53,13 +52,9 @@ class ExpectationMaximizationOriginal(ExpectationMaximization):
                         self.hidden_parameters[reviewNum][lineNum][word][aspect] = self.pi[reviewNum][lineNum][aspect] * \
                                                                                    self.topic_model[aspect][
                                                                                        word] / my_sum
-                        self.hidden_parameters_background[reviewNum][lineNum][word] = (self.lambda_background *
-                                                                                       self.background_probability[
-                                                                                           word]) / (
-                                                                                                  self.lambda_background *
-                                                                                                  self.background_probability[
-                                                                                                      word] + ((
-                                                                                                                           1 - self.lambda_background) * my_sum))
+                        self.hidden_parameters_background[reviewNum][lineNum][word] = \
+                            (self.lambda_background * self.background_probability[word]) / \
+                            (self.lambda_background * self.background_probability[word] + ((1 - self.lambda_background) * my_sum))
 
     def m_step(self):
         print(type(self).__name__, '- m_step...')

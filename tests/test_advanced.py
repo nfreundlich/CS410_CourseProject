@@ -10,6 +10,7 @@ import numpy as np
 import unittest
 from unittest import TestSuite
 
+
 class AdvancedTestSuite(unittest.TestCase):
     """Advanced test cases."""
 
@@ -46,7 +47,8 @@ class AdvancedTestSuite(unittest.TestCase):
             for j in range(0, len(np.array(hp_em_vector_one_sentence_for_testing[i]).squeeze())):
                 print(aspects_list[j], np.array(hp_em_vector_one_sentence_for_testing[i]).squeeze()[j])
                 print(hp_updated_by_santu[0][0][em.words_list[i]][aspects_list[j]])
-                if np.array(hp_em_vector_one_sentence_for_testing[i]).squeeze()[j] - hp_updated_by_santu[0][0][em.words_list[i]][aspects_list[j]] > 0.001:
+                if np.array(hp_em_vector_one_sentence_for_testing[i]).squeeze()[j] - \
+                        hp_updated_by_santu[0][0][em.words_list[i]][aspects_list[j]] > 0.001:
                     first_step_ok = False
                     break
         self.assertEqual(True, first_step_ok)
@@ -75,8 +77,6 @@ class AdvancedTestSuite(unittest.TestCase):
 
         self.assertEqual(hpb_updated_by_santu.all(), hpb_updated_by_expectation_minimization_original.all())
 
+
 if __name__ == '__main__':
     unittest.main()
-    #https://stackoverflow.com/questions/1068246/python-unittest-how-to-run-only-part-of-a-test-file
-    #suite = eval(sys.argv[1])  # Be careful with this line!
-    #unittest.TextTestRunner().run(suite)

@@ -67,8 +67,8 @@ class ExpectationMaximizationVector(ExpectationMaximization):
         for word_id in range(0, len(word_list)):
             words_map[word_list[word_id]] = word_id
 
-        #print("m", "nw", "na")
-        #print(m, nw, na)
+        #print("m", "v", "na")
+        #print(m, v, na)
 
         # initialize reviews with zeros
         reviews_matrix = np.zeros(m * nw).reshape(m, nw)
@@ -124,7 +124,7 @@ class ExpectationMaximizationVector(ExpectationMaximization):
         self.pi_matrix = pi_matrix
         self.m = m
         self.v = nw
-        self.na = na
+        self.f = na
         self.aspects_map = aspects_map
         self.words_map = words_map
         self.words_list = word_list
@@ -151,7 +151,7 @@ class ExpectationMaximizationVector(ExpectationMaximization):
 
         # TODO: enable this code when ready
         if False:
-            self.pi_matrix = np.random.dirichlet(np.ones(self.m), self.na).transpose()
+            self.pi_matrix = np.random.dirichlet(np.ones(self.m), self.f).transpose()
 
     def e_step(self):
         """

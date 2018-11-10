@@ -18,7 +18,7 @@ class ExpectationMaximization:
         # Parameters related to collection size
         self.m = 0
         self.v = 0
-        self.na = 0
+        self.f = 0
 
         # Parameters computed from collection
         self.reviews = None

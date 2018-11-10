@@ -123,7 +123,7 @@ class ExpectationMaximizationVector(ExpectationMaximization):
         self.topic_model_matrix = topic_model_matrix
         self.pi_matrix = pi_matrix
         self.m = m
-        self.nw = nw
+        self.v = nw
         self.na = na
         self.aspects_map = aspects_map
         self.words_map = words_map
@@ -142,12 +142,12 @@ class ExpectationMaximizationVector(ExpectationMaximization):
 
         # Initialize hidden_parameters
         self.hidden_parameters = []
-        hidden_parameters_one_sentence = np.zeros(self.m * self.nw).reshape(self.m, self.nw)
+        hidden_parameters_one_sentence = np.zeros(self.m * self.v).reshape(self.m, self.v)
         for sentence in range(0, self.m):
             self.hidden_parameters.append(hidden_parameters_one_sentence)
 
         # Initialize hidden_parameters_background
-        self.hidden_parameters_background = np.zeros(self.m * self.nw).reshape(self.m, self.nw)
+        self.hidden_parameters_background = csr_matrix((self.m, self.v))
 
         # TODO: enable this code when ready
         if False:
@@ -167,7 +167,7 @@ class ExpectationMaximizationVector(ExpectationMaximization):
 
             # Compute topic model for sentence as review_binary[sentence_s]^T * topic_model
             # TODO: extract this initialization in initialize_parameters
-            topic_model_sentence = self.reviews_binary[sentence].reshape(self.nw, 1).multiply(self.topic_model_matrix)
+            topic_model_sentence = self.reviews_binary[sentence].reshape(self.v, 1).multiply(self.topic_model_matrix)
 
             # Compute sum of review * topic_model for sentence_s
             sentence_sum = topic_model_sentence.dot(self.pi_matrix[sentence])
@@ -183,12 +183,12 @@ class ExpectationMaximizationVector(ExpectationMaximization):
             # TODO: Compute hidden_parameters_background
             background_probability = self.lambda_background * \
                                      self.reviews_binary[sentence].T.multiply(
-                                         self.background_probability.reshape(self.nw, 1))
+                                         self.background_probability.reshape(self.v, 1))
 
             # TODO: Optimize this, test sparse implementation
             hidden_parameters_background_sentence = background_probability / \
                                                     (background_probability +
-                                                     ((1 - self.lambda_background) * sentence_sum).reshape(self.nw, 1))
+                                                     ((1 - self.lambda_background) * sentence_sum).reshape(self.v, 1))
 
             # Only used for testing during implementation. To be deleted.
             self.hidden_parameters_one_sentence_for_testing = hidden_parameters_sentence
@@ -203,31 +203,31 @@ if __name__ == '__main__':
 
 """
     * Notation:
-            nw = number of words in vocabulary
+            v = number of words in vocabulary
             m  = number of sentences (lines) in all reviews
             na = number of aspects
     
     * Review matrix:
-            Sentence/Word | word 1 ... ... ... ... word nw
+            Sentence/Word | word 1 ... ... ... ... word v
             ---------------------------------------------------
-            Sentence 1    | count(s_1,w_1) ... ...  count(s_1, w_nw)
-            Sentence 2    | count(s_2,w_2) ... ...  count(s_2, w_nw)
+            Sentence 1    | count(s_1,w_1) ... ...  count(s_1, w_v)
+            Sentence 2    | count(s_2,w_2) ... ...  count(s_2, w_v)
             ...    ...     ... ...     ...     ...     ...
-            Sentence m    | count(s_m, w_1)... ...  count(s_m, w_nw)
+            Sentence m    | count(s_m, w_1)... ...  count(s_m, w_v)
     
     * Topic model
             Word/Aspect    | aspect 1   ...     ...     aspect na
             -----------------------------------------------------
             word 1         | tm(w1,a1) ...      ...    tm(w1, a_na)
             ...        ...             ....            ...     ...
-            word nw        | tm(w_nw, a_na) ... ....   tm(w_na, a_na)
+            word v        | tm(w_v, a_na) ... ....   tm(w_na, a_na)
     
     * Background probability
             Word           | Background probability
             ----------------------------------------
             word 1         |   bp_1
             ...        ... |   ...
-            word nw        |   bp_nw
+            word v        |   bp_v
     
     * PI
             Sentence/Aspect | aspect 1 ...      ...    aspect na
@@ -243,7 +243,7 @@ if __name__ == '__main__':
             word 1        | 0.0         ...         ...   0.0
             word 2        | 0.0         ...         ...   0.0
             ...    ...    |         ...     ...     ...
-            word nw       | 0.0    ...              ...   0.0
+            word v       | 0.0    ...              ...   0.0
             
         - [...]:
             ... ... ... 
@@ -253,10 +253,10 @@ if __name__ == '__main__':
             word 1        | 0.0         ...         ...   0.0
             word 2        | 0.0         ...         ...   0.0
             ...    ...    |         ...     ...     ...
-            word nw       | 0.0    ...              ...   0.0
+            word v       | 0.0    ...              ...   0.0
 
     * Hidden parameters background
-            Sentence/Word | word 1 ... ... ... ... word nw
+            Sentence/Word | word 1 ... ... ... ... word v
             ---------------------------------------------------
             Sentence 1    | 0.0        ...     ...   0.0
             Sentence 2    | 0.0    ...         ...   0.0

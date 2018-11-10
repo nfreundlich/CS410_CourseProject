@@ -30,7 +30,7 @@ class AdvancedTestSuite(unittest.TestCase):
 
         print("Values computed by e_step_vector:")
         sentence = 0
-        print(em.aspects_map.keys())
+        print(em.features_map.keys())
         for i in np.where(em.reviews_matrix[sentence].todense() > 0)[1]:
             print(em.words_list[i], hp_em_vector_one_sentence_for_testing[i])
         print("Values computed by e_step_original")
@@ -38,16 +38,16 @@ class AdvancedTestSuite(unittest.TestCase):
             print(key, hp_updated_by_santu[0][0][key])
 
         first_step_ok = True
-        aspects_list = []
-        for k, v in em.aspects_map.items():
-            aspects_list.append(k)
+        features_list = []
+        for k, v in em.features_map.items():
+            features_list.append(k)
         for i in np.where(em.reviews_matrix[sentence].todense() > 0)[1]:
             print(em.words_list[i])
             for j in range(0, len(np.array(hp_em_vector_one_sentence_for_testing[i]).squeeze())):
-                print(aspects_list[j], np.array(hp_em_vector_one_sentence_for_testing[i]).squeeze()[j])
-                print(hp_updated_by_santu[0][0][em.words_list[i]][aspects_list[j]])
+                print(features_list[j], np.array(hp_em_vector_one_sentence_for_testing[i]).squeeze()[j])
+                print(hp_updated_by_santu[0][0][em.words_list[i]][features_list[j]])
                 if np.array(hp_em_vector_one_sentence_for_testing[i]).squeeze()[j] - \
-                        hp_updated_by_santu[0][0][em.words_list[i]][aspects_list[j]] > 0.001:
+                        hp_updated_by_santu[0][0][em.words_list[i]][features_list[j]] > 0.001:
                     first_step_ok = False
                     break
         self.assertEqual(True, first_step_ok)

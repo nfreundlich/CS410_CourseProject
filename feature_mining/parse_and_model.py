@@ -1,12 +1,13 @@
 import pandas as pd
 import spacy
 from collections import Counter
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from spacy.attrs import LOWER, ORTH
 import en_core_web_sm
 import math
+import numpy
 
-
+# TODO: add tests
 def format_feature_list(feature_list: list) -> pd.DataFrame:
     """
     This function takes a list of strings and/or lists of strings and converts them to a DataFrame with ids. Terms in
@@ -56,12 +57,13 @@ def format_feature_list(feature_list: list) -> pd.DataFrame:
 
     return feature_df
 
-
+# TODO: add tests, alterate file formats
 def read_annotated_data(filename: str, nlines: int =None) -> dict:
     """
     Reads in Santu's annotated files and records the explicit features and implicit features annotated in the file
 
     ex. annotated_data = read_annotated_data(filename='demo_files/iPod.final', nlines=200)
+    ex. annotated_data = read_annotated_data(filename='demo_files/iPod.final', nlines=2)
 
     :param filename: Filename for the annotated data set
     :param nlines: Maximum number of lines from the file to read or None to read all lines
@@ -155,8 +157,9 @@ def read_annotated_data(filename: str, nlines: int =None) -> dict:
                 feature_list=feature_list)
 
 
-# TODO: Slow, needs to be optimized
-def build_explicit_models(text_set: pd.DataFrame, feature_set: pd.DataFrame) -> dict:
+# TODO: Slow, needs to be optimized, unit tests need to be added
+def build_explicit_models(text_set: pd.DataFrame, feature_set: pd.DataFrame, remove_stopwords: bool = False,
+                          lemmatize_words: bool = True) -> dict:
     """
     This function builds a background model, set of topic models and summarizes the counts of words in each sentence
         to prepare for EM optimization
@@ -165,17 +168,44 @@ def build_explicit_models(text_set: pd.DataFrame, feature_set: pd.DataFrame) -> 
         ex. em_input = build_explicit_models(text_set = annotated_data["section_list"], feature_set = feature_list)
 
     :param text_set: a pandas DataFrame with (at a minimum) the following columns
-
     :param feature_set: output of format feature list - OR -
         DataFrame with integer ids for each feature, synonyms are grouped together
         | feature (str) | feature_id (int)  | feature_term_id (int)
         feature: string representation of the feature
         feature_id: integer id for the feature, will be the same for synonyms if input in nested list
         feature_term_id: integer id for the feature, will be unique for each string, including synonyms
-    :return: a dictionary with three entries -
+    :param lemmatize_words: set to true if lemmatization should be performed on document sections before models are
+        created
+    :param remove_stopwords: set to true if stop words should be removed from document sections before models are
+        created
+    :return: a dictionary with seven entries -
         model_background: background model estimated from the entire document collection as described in section 4.2
+        model_background_array: background model estimated from the entire document collection as described in
+            section 4.2 in array form as follows:
+            Word           | Background probability
+            ----------------------------------------
+            word 1         |   bp_1
+            ...        ... |   ...
+            word |V|        |   bp_|V|
         model_feature: feature models estimated from explicit mention sections as described in section 4.2
+        model_feature_array: feature models estimated from explicit mention sections as described in section 4.2 in
+            array form as follows:
+            Word/Feature    | Feature 1   ...     ...     Feature |f|=k
+            -----------------------------------------------------------
+            word 1         | p(w1 | f1) ...      ...    p(w1 | fk)
+            ...        ...             ....            ...     ...
+            word nw        | p(w_|V|, fk) ... ....   tm(w_|V|, fk)
         section_word_counts: word counts in each section as needed by the EM algorithm
+        section_word_counts_matrix: word counts in each section in matrix form as needed by the EM alg as follows:
+            Section/Word | word 1 ... ... ... ... word |V|
+            ----------------------------------------------------------
+            Section 1    | count(s_1,w_1) ... ...  count(s_1, w_|V|)
+            Section 2    | count(s_2,w_1) ... ...  count(s_2, w_|V|)
+            ...    ...     ... ...     ...     ...     ...
+            Section m    | count(s_m, w_1)... ...  count(s_m, w_|V|)
+        vocabulary_lookup: a dictionary with
+            key: word id used in models, matrices, etc.
+            value: actual word
     """
     section_word_list = dict()  # list of all words in each section
     section_word_counts = dict()  # count of words in each section
@@ -183,6 +213,9 @@ def build_explicit_models(text_set: pd.DataFrame, feature_set: pd.DataFrame) -> 
     word_section_counter = Counter()  # count of number of sections with word
     feature_word_counter = defaultdict(Counter)  # keep track of words appearing in section w/ explicit feature mention
     feature_section_mapping = []  # keeps a list of the sentence ids associated with each feature (many-to-many mapping)
+
+    vocabulary = OrderedDict()
+    current_word_id=-1
 
     unique_feature_ids = feature_set.feature_id.unique()
 
@@ -202,8 +235,14 @@ def build_explicit_models(text_set: pd.DataFrame, feature_set: pd.DataFrame) -> 
         # filtering not necessary because of tfidf term in topic model?
         current_section_words = []
         for word in section:
-            if not word.is_stop and not word.is_punct:
-                current_section_words.append(word.lemma_ if word.lemma_ != '-PRON-' else word.lower_)
+            if (not word.is_stop or not remove_stopwords) and not word.is_punct:
+                cleaned_word = word.lemma_ if word.lemma_ != '-PRON-' or not lemmatize_words else word.lower_
+                current_section_words.append(cleaned_word)
+
+                # assign word an id if it doesn't have one already
+                if cleaned_word not in vocabulary:
+                    current_word_id += 1
+                    vocabulary[cleaned_word] = current_word_id
 
         # get a count of distinct words in the section - this might need to be switched to default dict later
         current_section_word_counts = Counter(current_section_words)
@@ -253,13 +292,16 @@ def build_explicit_models(text_set: pd.DataFrame, feature_set: pd.DataFrame) -> 
     ####################################
 
     # total number of words
-    vocabulary_size = sum(collection_word_counts.values())
+    vocabulary_size = len(collection_word_counts.values())
+    total_word_count = sum(collection_word_counts.values())
 
     # change counter to dictionary for calculations
     collection_word_counts = dict(collection_word_counts)
 
-    # calculate background model
-    model_background = dict((k, v / vocabulary_size) for k, v in collection_word_counts.items())
+    # calculate background model - ensure words are in key order
+    model_background = []
+    for word, word_id in vocabulary.items():
+        model_background.append(collection_word_counts[word] / total_word_count)
 
     ###############################
     # Calculations for topic model
@@ -290,16 +332,39 @@ def build_explicit_models(text_set: pd.DataFrame, feature_set: pd.DataFrame) -> 
             model_feature_norms[current_feature] += tfidf
 
     # normalize values of all dictionaries with totals
-    model_feature = defaultdict(dict)
+    model_feature = []
 
-    for index in model_feature_norms.keys():
+    for index in feature_set["feature_id"].unique():
         # print("normalizing " + str(index))
 
         #########################################################################################################
         # Formula 5, section 4.2, using base 2 logs, +1 in numerator already taken care of in tfidf calculation
         #########################################################################################################
-        model_feature[index] = dict((k, v / (model_feature_norms[index])) for k, v in tfidf_feature[index].items())
+        model_feature.append([])
+        for word, word_id in vocabulary.items():
+            # print(word + ":" + str(word_id))
+            model_feature[index].append(tfidf_feature[index][word] / (model_feature_norms[index]))
 
-    model_results = dict(model_background=model_background, model_feature=model_feature, doc_counts=section_word_counts)
+    # translate section word counts into matrix for EM
+    section_word_counts_array=numpy.zeros(shape=(section_count, vocabulary_size))
+    for section, word_list in section_word_counts.items():
+        # print(section)
+        for word, word_count in word_list.items():
+            # look up current word
+            word_id = vocabulary[word]
+            # print(str(word_id) + ":" + word)
+            section_word_counts_array[section, word_id] = word_count
+
+    # translate models into matrices for EM
+    model_background_array = numpy.array(model_background).T
+    model_feature_array = numpy.array(model_feature).T
+
+    # reverse vocabulary dictionary so it can be used to back-translate later
+    vocabulary_lookup = {v: k for k, v in vocabulary.items()}
+
+    model_results = dict(model_background=model_background, model_feature=model_feature,
+                         section_word_counts=section_word_counts, section_word_counts_array=section_word_counts_array,
+                         model_background_array=model_background_array, model_feature_array=model_feature_array,
+                         vocabulary_lookup=vocabulary_lookup)
 
     return model_results

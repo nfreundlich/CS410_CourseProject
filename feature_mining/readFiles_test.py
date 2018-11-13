@@ -7,6 +7,11 @@ import en_core_web_sm
 import math
 import pickle
 import os
+import cProfile
+
+# TODO: Delete entire file when done testing- scratch space only
+
+# profiling code: cProfile.runctx('build_explicit_models(text_set = annotated_data["section_list"], feature_set = feature_list)', None, locals(), sort="cumtime")
 
 # Change working directory
 os.chdir('C:\\Users\\Project Code\\feature_mining')
@@ -136,7 +141,7 @@ with open('model_background.data', 'wb') as filehandle:
     pickle.dump(model_background, filehandle)
     filehandle.close()
 
-with open('model_topic.data', 'wb') as filehandle:
+with open('model_feature.data', 'wb') as filehandle:
     # store the data as binary data stream
     pickle.dump(model_topic, filehandle)
     filehandle.close()
@@ -153,7 +158,7 @@ with open('model_background.data', 'rb') as filehandle:
     rd_model_background = pickle.load(filehandle)
     filehandle.close()
 
-with open('model_topic.data', 'rb') as filehandle:
+with open('model_feature.data', 'rb') as filehandle:
     # store the data as binary data stream
     rd_model_topic = pickle.load(filehandle)
     filehandle.close()
@@ -163,117 +168,3 @@ with open('docCounts.data', 'rb') as filehandle:
     rd_docCounts = pickle.load(filehandle)
     filehandle.close()
 
-
-def build_explicit_models(text_set: object, feature_set: object, feature_mapping: object) -> object:
-    """
-    This function builds a background model, set of topic models and summarizes the counts of words in each sentence
-        to prepare for EM optimization
-
-    :param text_set: a pandas dataframe with (at a minimum) the following columns
-    :param feature_set:
-    :param feature_mapping:
-    :return: a dictionary with three entries -
-        model_background: background model estimated from the entire document collection as described in section 4.2
-        model_topic: topic models estimated from explicit mention sentences as described in section 4.2
-        doc_counts: word counts in each sentence as needed by the EM algorithm
-    """
-    doc_list = dict()  # list of all terms in each sentence
-    doc_counts = dict()  # count of terms in each sentence
-    doc_counts_all = Counter()  # count of all words in all sentences
-    sentence_counter = Counter()  # count of number of sentences with word
-    feature_counter = defaultdict(Counter)
-
-    # loop over all rows in input data set
-    for index, row in text_set.iterrows():
-        # print the current text for debugging
-        print(str(row["sentence_id"]) + ":" + row["text"])
-
-        # input the sentence into Spacy
-        doc = nlp(row["text"])
-
-        # add each parsed word into a list via list comprehension
-        doc_word_list = []
-        for word in doc:
-            if not word.is_stop and not word.is_punct:
-                doc_word_list.append(word.lemma_ if word.lemma_ != '-PRON-' else word.lower_)
-
-        # get a count of distinct words in the doc - this might need to be switched to default dict later
-        word_counts = Counter(doc_word_list)
-
-        # get keys for distinct words to add to idf counter
-        sentence_counter.update(word_counts.keys())
-
-        # add these counts to the all doc counter
-        doc_counts_all.update(doc_word_list)
-
-        # add to doc counts dictionary
-        doc_counts[row["sentence_id"]] = word_counts
-
-        # add to dictionary holding word parsing
-        doc_list[row["sentence_id"]] = doc_word_list
-
-        # get all explicit topics for this sentence and add these words to the list
-        sentence_features = feature_mapping.loc[feature_mapping['sentence_id'] == int(row["sentence_id"])]
-        if len(sentence_features.index) > 0:
-            for index_f, row_f in sentence_features.iterrows():
-                print("feature " + str(row_f["feature_id"]))
-
-                # if we only count each word once
-                feature_counter[row_f["feature_id"]].update(word_counts.keys())
-
-                # if we count each words as many times as it occurs
-                # featureCounter[row_f["feature_id"]].update(doc_word_list)
-
-    # At this point we have all the counts we need to build the topic models
-
-    ####################################
-    # Calculations for background model
-    ####################################
-
-    # total number of words
-    total_word_count = sum(doc_counts_all.values())
-
-    # change counter to dictionary for calculations
-    doc_counts_all_dict = dict(doc_counts_all)
-
-    # calculate background model
-    model_background = dict((k, v / total_word_count) for k, v in doc_counts_all_dict.items())
-
-    ###############################
-    # Calculations for topic model
-    ###############################
-    tfidf_topic = defaultdict(dict)
-    model_topic_norms = Counter()
-
-    # count of sentences
-    num_sentences = len(doc_list)
-    num_words = len(doc_counts_all_dict)
-
-    for word in doc_counts_all_dict.keys():
-        print(word)
-
-        for index, row in feature_set.iterrows():
-            print(str(index) + "-" + row["feature"])
-
-            tfidf = math.log(1 + feature_counter[index][word]) * math.log(
-                1 + num_sentences / sentence_counter[word]) + 1
-            print(str(tfidf))
-
-            tfidf_topic[index][word] = tfidf
-
-            model_topic_norms[index] += tfidf
-
-    # normalize values of all dictionaries with totals
-    model_topic = defaultdict(dict)
-
-    for index in model_topic_norms.keys():
-        print("normalizing " + str(index))
-
-        model_topic[index] = dict((k, v / (model_topic_norms[index])) for k, v in tfidf_topic[index].items())
-
-    model_results = dict(model_background=model_background, model_topic=model_topic, doc_counts=doc_counts)
-
-    return model_results
-
-
-em_input = build_explicit_models(text_set=text_set, feature_set=feature_set, feature_mapping=feature_mapping)

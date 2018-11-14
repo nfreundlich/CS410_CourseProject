@@ -53,13 +53,13 @@ class ExpectationMaximizationVector(ExpectationMaximization):
         for reviewNum in range(0, len(self.reviews)):
             for lineNum in range(0, len(self.reviews[reviewNum])):
                 m += 1
-        for aspect in self.topic_model:
+        for feature in self.topic_model:
             na += 1
 
         words_dict = {}
-        for aspect in self.topic_model.keys():
-            #print(aspect, len(self.topic_model[aspect]))
-            for word in self.topic_model[aspect]:
+        for feature in self.topic_model.keys():
+            #print(feature, len(self.topic_model[feature]))
+            for word in self.topic_model[feature]:
                 words_dict[word] = True
         nw = len(words_dict.keys()) # 7266
         word_list = sorted(words_dict.keys())
@@ -67,8 +67,8 @@ class ExpectationMaximizationVector(ExpectationMaximization):
         for word_id in range(0, len(word_list)):
             words_map[word_list[word_id]] = word_id
 
-        #print("m", "nw", "na")
-        #print(m, nw, na)
+        #print("m", "v", "na")
+        #print(m, v, na)
 
         # initialize reviews with zeros
         reviews_matrix = np.zeros(m * nw).reshape(m, nw)
@@ -86,12 +86,12 @@ class ExpectationMaximizationVector(ExpectationMaximization):
         #    if reviews_matrix[0][i] != 0:
         #        print(i, reviews_matrix[0][i], word_list[i])
 
-        # construct the aspect map
-        current_aspect = 0
-        aspects_map = {}
-        for one_aspect in sorted(self.pi[0][0].keys()):
-            aspects_map[one_aspect] = current_aspect
-            current_aspect += 1
+        # construct the feature map
+        current_feature = 0
+        features_map = {}
+        for one_feature in sorted(self.pi[0][0].keys()):
+            features_map[one_feature] = current_feature
+            current_feature += 1
 
         # initialize pi
         # pi_matrix = np.random.dirichlet(np.ones(m), na).transpose()
@@ -100,15 +100,15 @@ class ExpectationMaximizationVector(ExpectationMaximization):
         pi_matrix = np.zeros(m * na).reshape(m, na)
         for reviewNum in range(0, len(self.reviews)):
             for lineNum in range(0, len(self.reviews[reviewNum])):
-                for aspect in self.pi[reviewNum][lineNum]:
-                    pi_matrix[section_id][aspects_map[aspect]] = self.pi[reviewNum][lineNum][aspect]
+                for feature in self.pi[reviewNum][lineNum]:
+                    pi_matrix[section_id][features_map[feature]] = self.pi[reviewNum][lineNum][feature]
                 section_id += 1
 
         # initialize topic model with zeros
         topic_model_matrix = np.zeros(nw * na).reshape(nw, na)
-        for aspect in self.topic_model:
-            for word in self.topic_model[aspect]:
-                topic_model_matrix[words_map[word]][aspects_map[aspect]] = self.topic_model[aspect][word]
+        for feature in self.topic_model:
+            for word in self.topic_model[feature]:
+                topic_model_matrix[words_map[word]][features_map[feature]] = self.topic_model[feature][word]
 
         # initialize hidden parameters for background
         self.words_map = words_map
@@ -123,9 +123,9 @@ class ExpectationMaximizationVector(ExpectationMaximization):
         self.topic_model_matrix = topic_model_matrix
         self.pi_matrix = pi_matrix
         self.m = m
-        self.nw = nw
-        self.na = na
-        self.aspects_map = aspects_map
+        self.v = nw
+        self.f = na
+        self.features_map = features_map
         self.words_map = words_map
         self.words_list = word_list
         self.background_probability = background_probability_vector
@@ -142,16 +142,16 @@ class ExpectationMaximizationVector(ExpectationMaximization):
 
         # Initialize hidden_parameters
         self.hidden_parameters = []
-        hidden_parameters_one_sentence = np.zeros(self.m * self.nw).reshape(self.m, self.nw)
+        hidden_parameters_one_sentence = np.zeros(self.m * self.v).reshape(self.m, self.v)
         for sentence in range(0, self.m):
             self.hidden_parameters.append(hidden_parameters_one_sentence)
 
         # Initialize hidden_parameters_background
-        self.hidden_parameters_background = np.zeros(self.m * self.nw).reshape(self.m, self.nw)
+        self.hidden_parameters_background = csr_matrix((self.m, self.v))
 
         # TODO: enable this code when ready
         if False:
-            self.pi_matrix = np.random.dirichlet(np.ones(self.m), self.na).transpose()
+            self.pi_matrix = np.random.dirichlet(np.ones(self.m), self.f).transpose()
 
     def e_step(self):
         """
@@ -167,7 +167,7 @@ class ExpectationMaximizationVector(ExpectationMaximization):
 
             # Compute topic model for sentence as review_binary[sentence_s]^T * topic_model
             # TODO: extract this initialization in initialize_parameters
-            topic_model_sentence = self.reviews_binary[sentence].reshape(self.nw, 1).multiply(self.topic_model_matrix)
+            topic_model_sentence = self.reviews_binary[sentence].reshape(self.v, 1).multiply(self.topic_model_matrix)
 
             # Compute sum of review * topic_model for sentence_s
             sentence_sum = topic_model_sentence.dot(self.pi_matrix[sentence])
@@ -183,12 +183,12 @@ class ExpectationMaximizationVector(ExpectationMaximization):
             # TODO: Compute hidden_parameters_background
             background_probability = self.lambda_background * \
                                      self.reviews_binary[sentence].T.multiply(
-                                         self.background_probability.reshape(self.nw, 1))
+                                         self.background_probability.reshape(self.v, 1))
 
             # TODO: Optimize this, test sparse implementation
             hidden_parameters_background_sentence = background_probability / \
                                                     (background_probability +
-                                                     ((1 - self.lambda_background) * sentence_sum).reshape(self.nw, 1))
+                                                     ((1 - self.lambda_background) * sentence_sum).reshape(self.v, 1))
 
             # Only used for testing during implementation. To be deleted.
             self.hidden_parameters_one_sentence_for_testing = hidden_parameters_sentence
@@ -203,34 +203,34 @@ if __name__ == '__main__':
 
 """
     * Notation:
-            nw = number of words in vocabulary
+            v = number of words in vocabulary
             m  = number of sentences (lines) in all reviews
-            na = number of aspects
+            f = number of features
     
     * Review matrix:
-            Sentence/Word | word 1 ... ... ... ... word nw
+            Sentence/Word | word 1 ... ... ... ... word v
             ---------------------------------------------------
-            Sentence 1    | count(s_1,w_1) ... ...  count(s_1, w_nw)
-            Sentence 2    | count(s_2,w_2) ... ...  count(s_2, w_nw)
+            Sentence 1    | count(s_1,w_1) ... ...  count(s_1, w_v)
+            Sentence 2    | count(s_2,w_2) ... ...  count(s_2, w_v)
             ...    ...     ... ...     ...     ...     ...
-            Sentence m    | count(s_m, w_1)... ...  count(s_m, w_nw)
+            Sentence m    | count(s_m, w_1)... ...  count(s_m, w_v)
     
     * Topic model
-            Word/Aspect    | aspect 1   ...     ...     aspect na
+            Word/feature    | feature 1   ...     ...     feature na
             -----------------------------------------------------
             word 1         | tm(w1,a1) ...      ...    tm(w1, a_na)
             ...        ...             ....            ...     ...
-            word nw        | tm(w_nw, a_na) ... ....   tm(w_na, a_na)
+            word v        | tm(w_v, a_na) ... ....   tm(w_na, a_na)
     
     * Background probability
             Word           | Background probability
             ----------------------------------------
             word 1         |   bp_1
             ...        ... |   ...
-            word nw        |   bp_nw
+            word v        |   bp_v
     
     * PI
-            Sentence/Aspect | aspect 1 ...      ...    aspect na
+            Sentence/feature | feature 1 ...      ...    feature na
             -----------------------------------------------------
             Sentence 1      | pi(s1,a1)  ...   ...     pi(s1, a_na)
             ...        ...             ....            ...     ...
@@ -238,25 +238,25 @@ if __name__ == '__main__':
     
     * Hidden parameters (list of one sparse matrix for each sentence)
         - [0]:
-            Word / Aspect | aspect 1 ... ... ... ... aspect na
+            Word / feature | feature 1 ... ... ... ... feature f
             ---------------------------------------------------
             word 1        | 0.0         ...         ...   0.0
             word 2        | 0.0         ...         ...   0.0
             ...    ...    |         ...     ...     ...
-            word nw       | 0.0    ...              ...   0.0
+            word v       | 0.0    ...              ...   0.0
             
         - [...]:
             ... ... ... 
         - [m]: 
-            Word / Aspect | aspect 1 ... ... ... ... aspect na
+            Word / feature | feature 1 ... ... ... ... feature f
             ---------------------------------------------------
             word 1        | 0.0         ...         ...   0.0
             word 2        | 0.0         ...         ...   0.0
             ...    ...    |         ...     ...     ...
-            word nw       | 0.0    ...              ...   0.0
+            word v       | 0.0    ...              ...   0.0
 
     * Hidden parameters background
-            Sentence/Word | word 1 ... ... ... ... word nw
+            Sentence/Word | word 1 ... ... ... ... word v
             ---------------------------------------------------
             Sentence 1    | 0.0        ...     ...   0.0
             Sentence 2    | 0.0    ...         ...   0.0

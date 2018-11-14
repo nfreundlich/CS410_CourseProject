@@ -26,6 +26,9 @@ class ExpectationMaximizationVector(ExpectationMaximization):
         self.hidden_parameters_one_sentence_for_testing = {}
         self.hidden_parameters_background_one_sentence_for_testing = {}
         self.expose_sentence_sum_for_testing = None
+        self.denom = 0.0
+        self.nom = 0.0
+        self.m_sum = None
 
     def import_data(self):
         print(type(self).__name__, '- import data...')
@@ -142,7 +145,7 @@ class ExpectationMaximizationVector(ExpectationMaximization):
 
         # Initialize hidden_parameters
         self.hidden_parameters = []
-        hidden_parameters_one_sentence = np.zeros(self.m * self.v).reshape(self.m, self.v)
+        hidden_parameters_one_sentence = np.zeros(self.f * self.v).reshape(self.f, self.v)
         for sentence in range(0, self.m):
             self.hidden_parameters.append(hidden_parameters_one_sentence)
 
@@ -194,6 +197,31 @@ class ExpectationMaximizationVector(ExpectationMaximization):
             self.hidden_parameters_one_sentence_for_testing = hidden_parameters_sentence
             self.expose_sentence_sum_for_testing = sentence_sum
             self.hidden_parameters_background_one_sentence_for_testing = hidden_parameters_background_sentence
+            print(30 * '*', "End sentence:", sentence, ' ', 30 * '*')
+
+    def m_step(self):
+        """
+                 Vectorized e-step.
+
+                 :return:
+                """
+        print(type(self).__name__, '- m_step...')
+        iv = csr_matrix(np.ones(self.v)).reshape(self.v, 1)
+
+        # TODO: after testing, change 1 to m (to treat all sentences)
+        for sentence in range(0, 1):  # TODO: replace with 'm' (now not needed)
+            print(30 * '*', "Start sentence:", sentence, ' ', 30 * '*')
+            self.m_sum = csr_matrix(iv - self.hidden_parameters_background_one_sentence_for_testing).T \
+                            .multiply(self.reviews_matrix[sentence]) \
+                            .dot(self.hidden_parameters_one_sentence_for_testing)
+            self.denom = self.m_sum.sum()
+
+            # TODO: delete this useless line after testing. All we need is m_sum.
+            self.nom = self.m_sum.item(sentence)
+
+            # update pi for a sentence
+            self.pi_matrix[sentence] = self.m_sum / self.m_sum.sum()
+
             print(30 * '*', "End sentence:", sentence, ' ', 30 * '*')
 
 

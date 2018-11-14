@@ -44,7 +44,7 @@ class TestExpectationMaximizationVector(TestCase):
         em.em()
 
         hp_background_em_vector = em.hidden_parameters_background_one_sentence_for_testing
-        hpb_updated_by_expectation_minimization_original = np.load(dump_path + "MY_HPB_Updated.npy")
+        hpb_updated_by_expectation_minimization_original = np.load(dump_path + "HPB_Updated.npy")
 
         background_one_sentence_ok = True
         for i in np.where(hp_background_em_vector > 0)[0]:
@@ -54,3 +54,49 @@ class TestExpectationMaximizationVector(TestCase):
                 background_one_sentence_ok = False
 
         self.assertEqual(True, background_one_sentence_ok)
+
+    def test_compute_denom(self):
+        dump_path = "./tests/data/em_01/"
+        em = ExpectationMaximizationVector(dump_path=dump_path)
+        em.em()
+
+        my_denom = em.denom
+        denom_original = np.load(dump_path + "DENOM.npy").item()
+
+        print("denom original: ", denom_original)
+        print("my denom: " , my_denom)
+
+        self.assertEqual(True, np.fabs(my_denom - denom_original) < 0.001)
+
+    def test_compute_nom(self):
+        dump_path = "./tests/data/em_01/"
+        em = ExpectationMaximizationVector(dump_path=dump_path)
+        em.em()
+
+        my_nom = em.nom
+        nom_original = np.load(dump_path + "NOM.npy").item()
+
+        print("nom original: ", nom_original)
+        print("my nom: " , my_nom)
+
+        self.assertEqual(True, np.fabs(my_nom - nom_original) < 0.001)
+
+    def test_m_step(self):
+        dump_path = "./tests/data/em_01/"
+        em = ExpectationMaximizationVector(dump_path=dump_path)
+        em.em()
+
+        pi_updated_by_santu = np.load(dump_path + "PI_updated.npy")
+        pi_updated = em.pi_matrix[0].reshape(1,em.f)
+
+        print("Pi 0 updated by original", pi_updated_by_santu)
+        print("Pi 0 updated by vector", pi_updated)
+
+        is_ok = True
+        for k, v in pi_updated_by_santu[0][0].items():
+            print(k, v, pi_updated.item(0, em.features_map[k]))
+            if np.fabs(v - pi_updated.item(0, em.features_map[k])) > 0.001:
+                is_ok = False
+
+        self.assertEqual(True, is_ok)
+

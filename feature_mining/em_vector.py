@@ -189,7 +189,7 @@ class ExpectationMaximizationVector(ExpectationMaximization):
 
         # Initialize hidden_parameters
         self.hidden_parameters = []
-        hidden_parameters_one_sentence = np.zeros(self.f * self.v).reshape(self.f, self.v)
+        hidden_parameters_one_sentence = csr_matrix((self.f * self.v))
         for sentence in range(0, self.m):
             self.hidden_parameters.append(hidden_parameters_one_sentence)
 
@@ -216,7 +216,7 @@ class ExpectationMaximizationVector(ExpectationMaximization):
         print(type(self).__name__, '- e_step...')
 
         # TODO: after testing, change 1 to m (to treat all sentences)
-        for sentence in range(0, 1):  # TODO: replace with 'm' (now not needed)
+        for sentence in range(0, 1):#self.m):  # TODO: replace with 'm' (now not needed)
             print(30 * '*', "E-Step Start sentence:", sentence, ' ', 30 * '*')
 
             # Compute sum of review * topic_model for sentence_s

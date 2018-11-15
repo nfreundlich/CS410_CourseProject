@@ -17,12 +17,16 @@ class ExpectationMaximizationVector(ExpectationMaximization):
         self.words_map = {}
         self.words_list = {}
 
+        # TODO: one more optimization place
+        self.topic_model_sentence_matrix = None
+
         # TODO: Remove these after testing validated
         # Parameters for temporary import transformation
         self.reviews_matrix = np.array([])
         self.pi_matrix = np.array([])
         self.topic_model_matrix = ()
         self.reviews_binary = np.array([])
+        self.previous_pi_matrix = None
         self.hidden_parameters_one_sentence_for_testing = {}
         self.hidden_parameters_background_one_sentence_for_testing = {}
         self.expose_sentence_sum_for_testing = None
@@ -31,10 +35,39 @@ class ExpectationMaximizationVector(ExpectationMaximization):
         self.m_sum = None
 
     def import_data(self):
+        """
+        Needed data structures could be further transformed here.
+
+        Input:
+            please see import_data_temporary (for now)
+        Output:
+            - self.reviews_matrix: matrix representation of Reviews
+            - self.topic_model_matrix: matrix representation of TopicModel
+            - self.pi_matrix: matrix representation of PI
+            - self.m: number of sections (sentences)
+            - self.v: number of words in vocabulary
+            - self.f: number of features/aspects
+            - self.iv: identity vector of b length
+            - self.features_map: used for testing - maps features to id-s
+            - self.words_map: used for testing - maps words to id-s
+            - self.words_list: list of words (inverse of words_map)
+            - self.background_probability = background_probability_vector
+        :return:
+        """
         print(type(self).__name__, '- import data...')
         self.import_data_temporary() # TODO: deactivate this when our data is available
 
     def import_data_temporary(self):
+        """
+        Transforms data read from a snapshot of Santu's data, after 1 execution of E-M steps.
+        Input:
+        - Reviews.npy: np dump of the Reviews structure
+        - TopicModel.npy: np dump of TopicModel
+        - BackgroundProbability: np dump of BackgroundProbability
+        - HP: np dump of hidden parameters
+        - PI: np dump of pi (important for testing purposes, since this is randomly generated)
+        :return:
+        """
         # TODO: this should be deleted once the implementation is safe
         print(type(self).__name__, '- import data ********temporary********...')
         self.reviews = np.load(self.dump_path + "Reviews.npy")
@@ -108,6 +141,7 @@ class ExpectationMaximizationVector(ExpectationMaximization):
                 section_id += 1
 
         # initialize topic model with zeros
+        # TODO: sparse this!
         topic_model_matrix = np.zeros(nw * na).reshape(nw, na)
         for feature in self.topic_model:
             for word in self.topic_model[feature]:
@@ -128,12 +162,22 @@ class ExpectationMaximizationVector(ExpectationMaximization):
         self.m = m
         self.v = nw
         self.f = na
+        self.iv = csr_matrix(np.ones(self.v)).reshape(self.v, 1)
         self.features_map = features_map
         self.words_map = words_map
         self.words_list = word_list
         self.background_probability = background_probability_vector
 
     def initialize_parameters(self):
+        """
+        Initialize helper parameters for E-M.
+
+        :return:
+            - reviews_binary: binary matrix of reviews_matrix (1 wherever count>0)
+            - hidden_parameters: 0-matrix of hidden parameters
+            - hidden_parameters_background: 0-matrix of h.p. background
+            - pi_matrix: random dirichlet initialization (DEACTIVATED MOMENTARILY)
+        """
         print(type(self).__name__, '- initialize parameters...')
 
         # Compute binary reviews matrix (1 if word in sentence, 0 if not) (same dimensions as reviews)
@@ -152,7 +196,14 @@ class ExpectationMaximizationVector(ExpectationMaximization):
         # Initialize hidden_parameters_background
         self.hidden_parameters_background = csr_matrix((self.m, self.v))
 
-        # TODO: enable this code when ready
+        # Compute topic model for sentence as review_binary[sentence_s]^T * topic_model
+        # TODO: extract this initialization in initialize_parameters and OPTIMIZE, OPTIMIZE
+        self.topic_model_sentence_matrix = []#((self.m, self.v, self.f))
+        for sentence in range(0, self.m):
+            self.topic_model_sentence_matrix.append(csr_matrix(
+                self.reviews_binary[sentence].reshape(self.v, 1).multiply(self.topic_model_matrix)))
+
+        # TODO: enable this code when ready to generate random pi-s
         if False:
             self.pi_matrix = np.random.dirichlet(np.ones(self.m), self.f).transpose()
 
@@ -166,14 +217,10 @@ class ExpectationMaximizationVector(ExpectationMaximization):
 
         # TODO: after testing, change 1 to m (to treat all sentences)
         for sentence in range(0, 1):  # TODO: replace with 'm' (now not needed)
-            print(30 * '*', "Start sentence:", sentence, ' ', 30 * '*')
-
-            # Compute topic model for sentence as review_binary[sentence_s]^T * topic_model
-            # TODO: extract this initialization in initialize_parameters
-            topic_model_sentence = self.reviews_binary[sentence].reshape(self.v, 1).multiply(self.topic_model_matrix)
+            print(30 * '*', "E-Step Start sentence:", sentence, ' ', 30 * '*')
 
             # Compute sum of review * topic_model for sentence_s
-            sentence_sum = topic_model_sentence.dot(self.pi_matrix[sentence])
+            sentence_sum = (self.topic_model_sentence_matrix[sentence].dot(self.pi_matrix[sentence]))
 
             # We will have 0 values for sentence_sum, for missing words; to avoid division by 0, sentence_sum(word) = 1
             sentence_sum = np.where(sentence_sum == 0, 1, sentence_sum)
@@ -181,23 +228,28 @@ class ExpectationMaximizationVector(ExpectationMaximization):
             # Compute hidden_parameters for sentence_s
             # TODO: not optimal (transpose twice). Redo please.
             hidden_parameters_sentence = (
-                        (topic_model_sentence.multiply(self.pi_matrix[sentence])).T / sentence_sum).T
+                        (self.topic_model_sentence_matrix[sentence].multiply(self.pi_matrix[sentence])).T / sentence_sum).T
 
-            # TODO: Compute hidden_parameters_background
-            background_probability = self.lambda_background * \
+            # Compute hidden_parameters_background
+            background_probability = csr_matrix(self.lambda_background * \
                                      self.reviews_binary[sentence].T.multiply(
-                                         self.background_probability.reshape(self.v, 1))
+                                         self.background_probability.reshape(self.v, 1)))
 
-            # TODO: Optimize this, test sparse implementation
-            hidden_parameters_background_sentence = background_probability / \
+            hidden_parameters_background_sentence = csr_matrix(background_probability / \
                                                     (background_probability +
-                                                     ((1 - self.lambda_background) * sentence_sum).reshape(self.v, 1))
+                                                     ((1 - self.lambda_background) * sentence_sum).reshape(self.v, 1)))
 
-            # Only used for testing during implementation. To be deleted.
-            self.hidden_parameters_one_sentence_for_testing = hidden_parameters_sentence
-            self.expose_sentence_sum_for_testing = sentence_sum
-            self.hidden_parameters_background_one_sentence_for_testing = hidden_parameters_background_sentence
-            print(30 * '*', "End sentence:", sentence, ' ', 30 * '*')
+            if True: # Used only for testing
+                # Only used for testing during implementation. To be deleted.
+                self.hidden_parameters_one_sentence_for_testing = hidden_parameters_sentence
+                self.expose_sentence_sum_for_testing = sentence_sum
+                self.hidden_parameters_background_one_sentence_for_testing = hidden_parameters_background_sentence.todense()
+
+                # this is to be kept
+                self.hidden_parameters[sentence] = hidden_parameters_sentence.copy()
+                self.hidden_parameters_background[sentence] = hidden_parameters_background_sentence.T.copy()
+
+                # print(30 * '*', "End sentence:", sentence, ' ', 30 * '*')
 
     def m_step(self):
         """
@@ -206,23 +258,29 @@ class ExpectationMaximizationVector(ExpectationMaximization):
                  :return:
                 """
         print(type(self).__name__, '- m_step...')
-        iv = csr_matrix(np.ones(self.v)).reshape(self.v, 1)
+        self.previous_pi_matrix = self.pi_matrix.copy()
 
         # TODO: after testing, change 1 to m (to treat all sentences)
         for sentence in range(0, 1):  # TODO: replace with 'm' (now not needed)
             print(30 * '*', "Start sentence:", sentence, ' ', 30 * '*')
-            self.m_sum = csr_matrix(iv - self.hidden_parameters_background_one_sentence_for_testing).T \
+            self.m_sum = csr_matrix(self.iv - self.hidden_parameters_background_one_sentence_for_testing).T \
                             .multiply(self.reviews_matrix[sentence]) \
                             .dot(self.hidden_parameters_one_sentence_for_testing)
             self.denom = self.m_sum.sum()
 
             # TODO: delete this useless line after testing. All we need is m_sum.
-            self.nom = self.m_sum.item(sentence)
+            self.nom = self.m_sum.item(0)
 
             # update pi for a sentence
             self.pi_matrix[sentence] = self.m_sum / self.m_sum.sum()
 
             print(30 * '*', "End sentence:", sentence, ' ', 30 * '*')
+
+    def compute_cost(self):
+        print(type(self).__name__, '- compute cost...')
+        delta = self.pi_matrix - self.previous_pi_matrix
+
+        return 0.0
 
 
 if __name__ == '__main__':

@@ -65,6 +65,7 @@ class TestExpectationMaximizationVector(TestCase):
 
         print("denom original: ", denom_original)
         print("my denom: " , my_denom)
+        print("my denom detail: ", em.m_sum)
 
         self.assertEqual(True, np.fabs(my_denom - denom_original) < 0.001)
 

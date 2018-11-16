@@ -3,6 +3,7 @@
 from unittest import TestCase
 from feature_mining import ExpectationMaximizationVector
 import numpy as np
+from scipy.sparse import csr_matrix
 
 
 class TestExpectationMaximizationVector(TestCase):
@@ -11,10 +12,10 @@ class TestExpectationMaximizationVector(TestCase):
         em = ExpectationMaximizationVector(dump_path=dump_path)
         em.em()
 
-        hp_updated_by_santu = np.load(dump_path + "HP_updated.npy")
-        hp_em_vector_one_sentence_for_testing = em.hidden_parameters_one_sentence_for_testing
+        hp_em_vector_one_sentence_for_testing = em.hidden_parameters[0]
 
         print("Values computed by e_step_vector:")
+        hp_updated_by_santu = np.load(dump_path + "HP_updated.npy")
         sentence = 0
         print(em.features_map.keys())
         for i in np.where(em.reviews_matrix[sentence].todense() > 0)[1]:
@@ -43,7 +44,7 @@ class TestExpectationMaximizationVector(TestCase):
         em = ExpectationMaximizationVector(dump_path=dump_path)
         em.em()
 
-        hp_background_em_vector = em.hidden_parameters_background_one_sentence_for_testing
+        hp_background_em_vector = em.hidden_parameters_background[0].todense().T
         hpb_updated_by_expectation_minimization_original = np.load(dump_path + "HPB_Updated.npy")
 
         background_one_sentence_ok = True

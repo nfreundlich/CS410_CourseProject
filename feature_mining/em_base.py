@@ -1,3 +1,5 @@
+import time
+
 class ExpectationMaximization:
     """
     Base class for Expectation - Maximization algorithm.
@@ -39,9 +41,12 @@ class ExpectationMaximization:
     def em_loop(self):
         print(type(self).__name__, "- base loop...")
         while self.max_iter:
+            start_time_iteration = time.time()
             self.max_iter -= 1
             self.e_step()
             self.m_step()
+            end_time_iteration = time.time()
+            print("Elapsed on iteration: {} seconds".format(round(end_time_iteration - start_time_iteration, 4)))
             if self.compute_cost() < self.dist_threshold:
                 break
 
@@ -56,9 +61,14 @@ class ExpectationMaximization:
         return 0.0
 
     def em(self):
+        start_time = time.time()
+
         self.import_data()
         self.initialize_parameters()
         self.em_loop()
+
+        end_time = time.time()
+        print("Elapsed: {} seconds".format(round(end_time - start_time, 4)))
 
     def _dump_hidden_parameters(self):
         print(type(self).__name__, "- base dump hidden parameters...")

@@ -76,16 +76,20 @@ class ExpectationMaximizationOriginal(ExpectationMaximization):
                     for word in self.reviews[reviewNum][lineNum]:
                         denom += self.reviews[reviewNum][lineNum][word] * (1 - self.hidden_parameters_background[reviewNum][lineNum][word]) * \
                                  self.hidden_parameters[reviewNum][lineNum][word][aspect]
+                # np.save(self.dump_path + "DENOM", denom)
 
                 for aspect in self.topic_model:
                     nom = 0
                     for word in self.reviews[reviewNum][lineNum]:
                         nom += self.reviews[reviewNum][lineNum][word] * (1 - self.hidden_parameters_background[reviewNum][lineNum][word]) * \
                                self.hidden_parameters[reviewNum][lineNum][word][aspect]
+
+                    # np.save(self.dump_path + "NOM", nom)
                     try:
                         self.pi[reviewNum][lineNum][aspect] = nom / denom
                     except:
                         print(reviewNum, lineNum, aspect, nom, denom)
+
 
     def compute_cost(self):
         #self.pi = np.load(self.dump_path + "PI_updated.npy")
@@ -100,13 +104,13 @@ class ExpectationMaximizationOriginal(ExpectationMaximization):
         np.save(self.dump_path + "MY_DIST", dist)
         return 0.0
 
-
     def _dump_hidden_parameters(self):
         print(type(self).__name__, '- _dump_hidden_parameters...')
         np.save(self.dump_path + "MY_HP_Updated", self.hidden_parameters)
         np.save(self.dump_path + "MY_HPB_updated", self.hidden_parameters_background)
         np.save(self.dump_path + "MY_PI_updated", self.pi)
         np.save(self.dump_path + "MY_PREVIOUS_PI", self.previous_pi)
+
 
 if __name__ == '__main__':
     em = ExpectationMaximizationOriginal()

@@ -1,9 +1,11 @@
 import numpy as np
 from scipy.sparse import csr_matrix
 from feature_mining.em_base import ExpectationMaximization
+from feature_mining import parse_and_model
+from datetime import datetime
 
 
-class ExpectationMaximizationVector(ExpectationMaximization):
+class ExpectationMaximizationVectorV2(ExpectationMaximization):
     """
     Vectorized implementation of EM algorithm.
     """
@@ -54,7 +56,29 @@ class ExpectationMaximizationVector(ExpectationMaximization):
         :return:
         """
         print(type(self).__name__, '- import data...')
-        self.import_data_temporary() # TODO: deactivate this when our data is available
+
+        # TODO: determine how best to pass in necessary arguments
+
+        print("formatting feature list")
+        feature_list = parse_and_model.format_feature_list(feature_list=["sound", "battery", ["screen", "display"]])
+
+        print("reading annotated data")
+        annotated_data = parse_and_model.read_annotated_data(filename='feature_mining/demo_files/iPod.final', nlines=2)
+
+        print("parsing text and building explicit feature models: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        em_input = parse_and_model.build_explicit_models(text_set=annotated_data["section_list"], feature_set=feature_list)
+        print("parsing text and building explicit feature models: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+
+        # Parameters related to collection size
+        self.m = em_input["section_word_counts_matrix"].shape[0]
+        self.v = em_input["section_word_counts_matrix"].shape[1]
+        self.f = em_input["model_feature_matrix"].shape[1]
+
+        # Parameters computed from collection
+        self.reviews_matrix = em_input["section_word_counts_matrix"]
+        self.topic_model = em_input["model_feature_matrix"].toarray() # TODO remove toarray after fixing parse and model
+        self.background_probability = em_input["model_background_matrix"]
+
 
     def import_data_temporary(self):
         """
@@ -168,7 +192,7 @@ class ExpectationMaximizationVector(ExpectationMaximization):
         print(type(self).__name__, '- initialize parameters...')
 
         # Compute binary reviews matrix (1 if word in sentence, 0 if not) (same dimensions as reviews)
-        self.reviews_binary = np.where(self.reviews_matrix > 0, 1, 0)
+        self.reviews_binary = self.reviews_matrix.sign()
 
         # Compute sparse matrix
         self.reviews_matrix = csr_matrix(self.reviews_matrix)
@@ -176,19 +200,26 @@ class ExpectationMaximizationVector(ExpectationMaximization):
 
         # Initialize hidden_parameters
         self.hidden_parameters = []
-        hidden_parameters_one_sentence = csr_matrix((self.f, self.v))
-        for sentence in range(0, self.m):
-            self.hidden_parameters.append(hidden_parameters_one_sentence)
+        hidden_parameters_one_feature = csr_matrix((self.m, self.v))
+        for feature in range(0, self.f):
+            self.hidden_parameters.append(hidden_parameters_one_feature)
 
         # Initialize hidden_parameters_background
         self.hidden_parameters_background = csr_matrix((self.m, self.v))
 
+        # Calculate E-step background hidden parameter numerator - this won't change throughout the process
+        self.hidden_parameters_background_estep = self.reviews_binary.multiply(self.lambda_background).multiply(self.background_probability)
+
         # Compute topic model for sentence as review_binary[sentence_s]^T * topic_model
         # TODO: extract this initialization in initialize_parameters and OPTIMIZE, OPTIMIZE
-        self.topic_model_sentence_matrix = []#((self.m, self.v, self.f))
-        for sentence in range(0, self.m):
-            self.topic_model_sentence_matrix.append(csr_matrix(
-                self.reviews_binary[sentence].reshape(self.v, 1).multiply(self.topic_model_matrix)))
+        # self.topic_model_sentence_matrix = []#((self.m, self.v, self.f))
+        # for sentence in range(0, self.m):
+        #    self.topic_model_sentence_matrix.append(csr_matrix(
+        #        self.reviews_binary[sentence].reshape(self.v, 1).multiply(self.topic_model_matrix)))
+
+        # TODO disable when testing is done - currently starting with even weights
+        if True:
+            self.pi_matrix = np.full((self.m, self.f), 1/self.f)
 
         # TODO: enable this code when ready to generate random pi-s
         if False:
@@ -202,28 +233,37 @@ class ExpectationMaximizationVector(ExpectationMaximization):
         """
         print(type(self).__name__, '- e_step...')
 
-        # TODO: after testing, change 1 to m (to treat all sentences)
-        for sentence in range(0, 1):  # TODO: replace with 'm' (now not needed)
-            print(30 * '*', "E-Step Start sentence:", sentence, ' ', 30 * '*')
+        # TODO: after testing, change 1 to k (to treat all features)
+        for feature in range(0, self.f):  # TODO: replace with 'f' (now not needed)
+            print(30 * '*', "E-Step Start feature:", feature, ' ', 30 * '*')
 
-            # Compute sum of review * topic_model for sentence_s
-            sentence_sum = (self.topic_model_sentence_matrix[sentence].dot(self.pi_matrix[sentence]))
+            pi_topic = np.dot(self.pi_matrix[:,feature,np.newaxis], self.topic_model[np.newaxis, :, feature])
 
-            # We will have 0 values for sentence_sum, for missing words; to avoid division by 0, sentence_sum(word) = 1
-            sentence_sum = np.where(sentence_sum == 0, 1, sentence_sum).reshape(self.v, 1)
+            self.hidden_parameters[feature] = self.reviews_binary.multiply(pi_topic)
 
-            # Compute hidden_parameters for sentence_s
-            self.hidden_parameters[sentence] = ((self.topic_model_sentence_matrix[sentence].multiply(self.pi_matrix[sentence]))
-                              / sentence_sum)
+            if feature==0:
+                # First loop, initialze sum
+                hidden_param_sum = self.hidden_parameters[feature]
+            else:
+                # Not first loop, add to existing sum
+                hidden_param_sum += self.hidden_parameters[feature]
 
-            # Compute hidden_parameters_background
-            background_probability = csr_matrix(self.lambda_background *
-                                     self.reviews_binary[sentence].T.multiply(
-                                     self.background_probability))
+        # Calculate denominator for background hidden parameters
+        hidden_background_denom = self.hidden_parameters_background_estep + hidden_param_sum.multiply(1-self.lambda_background)
 
-            self.hidden_parameters_background[sentence] = csr_matrix(background_probability /
-                                    (background_probability +
-                                    ((1 - self.lambda_background) * sentence_sum).reshape(self.v, 1))).T
+        # Normalize hidden background parameters
+        self.hidden_parameters_background = self.hidden_parameters_background_estep.multiply(hidden_background_denom.power(-1))
+
+        # take element-wise sum hidden feature params ^ -1 so we can divide instead of multiplying
+        hidden_param_sum = hidden_param_sum.power(-1)
+
+        # Normalize hidden parameters for each feature
+        for feature in range(0, self.f):
+            print(30 * '*', "E-Step Start feature normalization:", feature, ' ', 30 * '*')
+
+            self.hidden_parameters[feature] = self.hidden_parameters[feature].multiply(hidden_param_sum)
+
+
 
     def m_step(self):
         """
@@ -235,31 +275,40 @@ class ExpectationMaximizationVector(ExpectationMaximization):
 
         self.previous_pi_matrix = self.pi_matrix.copy()
 
-        # TODO: after testing, change 1 to m (to treat all sentences)
-        for sentence in range(0, 1):  # TODO: replace with 'm' (now not needed)
-            print(30 * '*', "Start sentence:", sentence, ' ', 30 * '*')
-            self.m_sum = csr_matrix(self.iv - self.hidden_parameters_background[sentence]) \
-                            .multiply(self.reviews_matrix[sentence]) \
-                            .dot(self.hidden_parameters[sentence])
-            self.denom = self.m_sum.sum()
+        # Calculate non-feature dependent portion of m-step numerator: c(w,s) (1-P(z_sw = B))
+        multiplier = self.hidden_parameters_background.multiply(-1)
+        multiplier.data -= 1
+        multiplier = self.reviews_matrix.multiply(multiplier)
 
-            # TODO: delete this useless line after testing. All we need is m_sum.
-            self.nom = self.m_sum.item(0)
+        # For each feature calculate numerator
+        for feature in range(0, self.f):
+            print(30 * '*', "M-step start pi calculation:", feature, ' ', 30 * '*')
 
-            # update pi for a sentence
-            self.pi_matrix[sentence] = self.m_sum / self.m_sum.sum()
+            new_pi = multiplier.multiply(self.hidden_parameters[feature]).sum(axis=1)
 
-            print(30 * '*', "End sentence:", sentence, ' ', 30 * '*')
+            # keep running total for denominator
+            if feature==0:
+                # if first feature initialize
+                self.pi_matrix = new_pi
+                pi_sums = new_pi
+            else:
+                # if not first feature then add on to pi matrix
+                self.pi_matrix = np.column_stack((self.pi_matrix, new_pi))
+                pi_sums += new_pi
+
+        self.pi_matrix = np.multiply(self.pi_matrix, np.power(pi_sums, -1))
+
+
 
     def compute_cost(self):
         print(type(self).__name__, '- compute cost...')
-        delta = self.pi_matrix - self.previous_pi_matrix
+        delta = np.subtract(self.pi_matrix, self.previous_pi_matrix)
 
-        return 0.0
+        return np.max(np.positive(delta))
 
 
 if __name__ == '__main__':
-    em = ExpectationMaximizationVector()
+    em = ExpectationMaximizationVectorV2()
     em.em()
 
 """

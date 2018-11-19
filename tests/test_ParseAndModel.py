@@ -1,8 +1,9 @@
 from unittest import TestCase
 from feature_mining import parse_and_model
 import pandas as pd
-from collections import defaultdict, OrderedDict
-
+from collections import defaultdict, OrderedDict, Counter
+import numpy
+from scipy.sparse import csr_matrix
 
 class TestParseAndModel(TestCase):
 
@@ -38,7 +39,8 @@ class TestParseAndModel(TestCase):
         self.assertEqual(True, pd.DataFrame.equals(df, feature_list))
 
     def test_read_annotated_dat_one_line(self):
-        df_section_list = pd.DataFrame([[0, 0, "very pleased", True]], columns=["doc_id", "section_id", "section_text", "title"])
+        df_section_list = pd.DataFrame([[0, 0, "very pleased", True]],
+                                       columns=["doc_id", "section_id", "section_text", "title"])
         df_feature_mapping = pd.DataFrame([])
         df_feature_list = defaultdict(int)
 
@@ -46,74 +48,139 @@ class TestParseAndModel(TestCase):
 
         self.assertEqual(True, pd.DataFrame.equals(df_section_list, oneLine["section_list"]))
         self.assertEqual(True, pd.DataFrame.equals(df_feature_mapping, oneLine["feature_mapping"]))
-        #self.assertEqual(0, ((df_feature_list > oneLine["feature_list"]) - (df_feature_list < oneLine["feature_list"])))
+        # self.assertEqual(0, ((df_feature_list > oneLine["feature_list"]) - (df_feature_list < oneLine["feature_list"])))
 
     def test_read_annotated_dat_one_feature_implicit(self):
-        df_section_list = pd.DataFrame([[0, 0, "it is handy to carry around because of the  and easy to store", False]], columns=["doc_id", "section_id", "section_text", "title"])
+        df_section_list = pd.DataFrame([[0, 0, "it is handy to carry around because of the  and easy to store", False]],
+                                       columns=["doc_id", "section_id", "section_text", "title"])
         df_feature_mapping = pd.DataFrame([[0, "size", False, 0]],
                                           columns=["doc_id", "feature", "is_explicit", "section_id"])
         df_feature_list = defaultdict(int)
 
-        oneLine = parse_and_model.read_annotated_data(filename='data/parse_and_model/iPod.final', nlines=1, start_line=6)
+        one_line = parse_and_model.read_annotated_data(filename='data/parse_and_model/iPod.final', nlines=1,
+                                                      start_line=6)
 
-        self.assertEqual(True, pd.DataFrame.equals(df_section_list, oneLine["section_list"]))
-        self.assertEqual(True, pd.DataFrame.equals(df_feature_mapping, oneLine["feature_mapping"]))
-        #self.assertEqual(0, ((df_feature_list > oneLine["feature_list"]) - (df_feature_list < oneLine["feature_list"])))
+        self.assertEqual(True, pd.DataFrame.equals(df_section_list, one_line["section_list"]))
+        self.assertEqual(True, pd.DataFrame.equals(df_feature_mapping, one_line["feature_mapping"]))
+        # self.assertEqual(0, ((df_feature_list > one_line["feature_list"]) - (df_feature_list < one_line["feature_list"])))
 
     def test_read_annotated_dat_one_feature_explicit(self):
-        df_section_list = pd.DataFrame([[0, 0, "the battery life is outstanding (again, compared to the mini)", False]], columns=["doc_id", "section_id", "section_text", "title"])
-        df_feature_mapping = pd.DataFrame([[0, "battery", True, 0]], columns=["doc_id", "feature", "is_explicit", "section_id"])
+        df_section_list = pd.DataFrame([[0, 0, "the battery life is outstanding (again, compared to the mini)", False]],
+                                       columns=["doc_id", "section_id", "section_text", "title"])
+        df_feature_mapping = pd.DataFrame([[0, "battery", True, 0]],
+                                          columns=["doc_id", "feature", "is_explicit", "section_id"])
         df_feature_list = defaultdict(int)
         df_feature_list["battery"] = 1
 
-        oneLine = parse_and_model.read_annotated_data(filename='data/parse_and_model/iPod.final', nlines=1, start_line=13)
+        one_line = parse_and_model.read_annotated_data(filename='data/parse_and_model/iPod.final', nlines=1,
+                                                      start_line=13)
 
-        self.assertEqual(True, pd.DataFrame.equals(df_section_list, oneLine["section_list"]))
-        self.assertEqual(True, pd.DataFrame.equals(df_feature_mapping, oneLine["feature_mapping"]))
-        self.assertEqual(True, dict(df_feature_list) == dict(oneLine["feature_list"]))
+        self.assertEqual(True, pd.DataFrame.equals(df_section_list, one_line["section_list"]))
+        self.assertEqual(True, pd.DataFrame.equals(df_feature_mapping, one_line["feature_mapping"]))
+        self.assertEqual(True, dict(df_feature_list) == dict(one_line["feature_list"]))
 
     def test_read_annotated_dat_two_feature_explicit(self):
-        df_section_list = pd.DataFrame([[0, 0, "my son loves the nano, it is small and has a good size screen", False]], columns=["doc_id", "section_id", "section_text", "title"])
+        df_section_list = pd.DataFrame([[0, 0, "my son loves the nano, it is small and has a good size screen", False]],
+                                       columns=["doc_id", "section_id", "section_text", "title"])
         df_feature_mapping = pd.DataFrame([[0, "screen", True, 0]
-                                           ,[0, "size", True, 0]], columns=["doc_id", "feature", "is_explicit", "section_id"])
+                                              , [0, "size", True, 0]],
+                                          columns=["doc_id", "feature", "is_explicit", "section_id"])
         df_feature_list = defaultdict(int)
-        df_feature_list["screen"]=1
+        df_feature_list["screen"] = 1
         df_feature_list["size"] = 1
 
-        oneLine = parse_and_model.read_annotated_data(filename='data/parse_and_model/iPod.final', nlines=1, start_line=622)
+        one_line = parse_and_model.read_annotated_data(filename='data/parse_and_model/iPod.final', nlines=1,
+                                                      start_line=622)
 
-        self.assertEqual(True, pd.DataFrame.equals(df_section_list, oneLine["section_list"]))
-        self.assertEqual(True, pd.DataFrame.equals(df_feature_mapping, oneLine["feature_mapping"]))
-        self.assertEqual(True, dict(df_feature_list) == dict(oneLine["feature_list"]))
+        self.assertEqual(True, pd.DataFrame.equals(df_section_list, one_line["section_list"]))
+        self.assertEqual(True, pd.DataFrame.equals(df_feature_mapping, one_line["feature_mapping"]))
+        self.assertEqual(True, dict(df_feature_list) == dict(one_line["feature_list"]))
 
     def test_read_annotated_dat_complicated_reviews(self):
         df_section_list = pd.DataFrame([[0, 0, "it could be better", True]
-                                            ,   [0, 1, "this item is very nice and plays songs in a very good stereo sound but my problem with this item is the  it does not last not even near the 14 hours they claimed to last", False]
-                                            ,   [0, 2, "i hope the new nano is at leat close to the hours claimed", False]
-                                            ,   [1, 3, "pink apple 4gb nano ipod review", True]
-                                            ,   [1, 4, "it was a gift for christmas to my daughter", False]
-                                            ,   [1, 5, "she absolutely loves it! the sound quality is excellent!! the different colors make a nice option as well", False]
-                                            ,   [1, 6, "i originally picked a silver one, because that is all the store had", False]
-                                            ,   [1, 7, "i then checked amazon", False]
-                                            ,   [1, 8, "com that not only had it in pink(the color my daughter wanted), [", False]
-                                            ,   [1, 9, "]i would recommend this product to everyone", False]
+                                           , [0, 1,
+                                              "this item is very nice and plays songs in a very good stereo sound but my problem with this item is the  it does not last not even near the 14 hours they claimed to last",
+                                              False]
+                                           , [0, 2, "i hope the new nano is at leat close to the hours claimed", False]
+                                           , [1, 3, "pink apple 4gb nano ipod review", True]
+                                           , [1, 4, "it was a gift for christmas to my daughter", False]
+                                           , [1, 5,
+                                              "she absolutely loves it! the sound quality is excellent!! the different colors make a nice option as well",
+                                              False]
+                                           , [1, 6, "i originally picked a silver one, because that is all the store had",
+                                         False]
+                                           , [1, 7, "i then checked amazon", False]
+                                           , [1, 8, "com that not only had it in pink(the color my daughter wanted), [",
+                                              False]
+                                           , [1, 9, "]i would recommend this product to everyone", False]
 
                                         ], columns=["doc_id", "section_id", "section_text", "title"])
         df_feature_mapping = pd.DataFrame([[0, "battery", False, 1]
-                                           , [0, "sound", True, 1]
-                                           , [1, "sound", True, 5]], columns=["doc_id", "feature", "is_explicit", "section_id"])
+                                              , [0, "sound", True, 1]
+                                              , [1, "sound", True, 5]],
+                                          columns=["doc_id", "feature", "is_explicit", "section_id"])
         df_feature_list = defaultdict(int)
         df_feature_list["battery"] = 1
         df_feature_list["sound"] = 2
 
-        oneLine = parse_and_model.read_annotated_data(filename='data/parse_and_model/iPod.final', nlines=10, start_line=660)
+        one_line = parse_and_model.read_annotated_data(filename='data/parse_and_model/iPod.final', nlines=10,
+                                                      start_line=660)
 
-        self.assertEqual(True, pd.DataFrame.equals(df_section_list, oneLine["section_list"]))
-        self.assertEqual(True, pd.DataFrame.equals(df_feature_mapping, oneLine["feature_mapping"]))
-        self.assertEqual(True, dict(df_feature_list) == dict(oneLine["feature_list"]))
+        self.assertEqual(True, pd.DataFrame.equals(df_section_list, one_line["section_list"]))
+        self.assertEqual(True, pd.DataFrame.equals(df_feature_mapping, one_line["feature_mapping"]))
+        self.assertEqual(True, dict(df_feature_list) == dict(one_line["feature_list"]))
 
-    def test_build_explicit_models(self):
-        self.fail()
+    def test_bem_one_section(self):
+        section_list = pd.DataFrame([[0, 0, "large clear screen", True]
+                                        ], columns=["doc_id", "section_id", "section_text", "title"])
+
+        feature_list = parse_and_model.format_feature_list(feature_list=["screen"])
+
+        em_input = parse_and_model.build_explicit_models(text_set=section_list, feature_set=feature_list)
+
+        expected_model_background=[1/3, 1/3, 1/3]
+        expected_model_feature=[[1/3, 1/3, 1/3]]
+        expected_section_word_counts={0:Counter({"large": 1, "clear": 1, "screen":1})}
+        expected_section_word_counts_matrix=[[1,1,1]]
+        expected_model_background_matrix=numpy.array([1/3, 1/3, 1/3])
+        expected_model_feature_matrix = numpy.array([[1 / 3], [1 / 3], [1 / 3]])
+        expected_vocab_lookup={0: 'large', 1: 'clear', 2: 'screen'}
+
+        self.assertEqual(True, expected_model_background==em_input["model_background"])
+        self.assertEqual(True, expected_model_feature == em_input["model_feature"])
+        #self.assertEqual(True, expected_section_word_counts == em_input["section_word_counts"])
+        self.assertEqual(True, numpy.array_equiv(expected_section_word_counts_matrix, csr_matrix.toarray(em_input["section_word_counts_matrix"])))
+        self.assertEqual(True, numpy.array_equiv(expected_model_background_matrix,csr_matrix.toarray(em_input["model_background_matrix"])))
+        self.assertEqual(True, numpy.array_equiv(expected_model_feature_matrix, csr_matrix.toarray(em_input["model_feature_matrix"])))
+        self.assertEqual(True, expected_vocab_lookup == em_input["vocabulary_lookup"])
+
+    def test_bem_two_section(self):
+        section_list = pd.DataFrame([[0, 0, "large clear screen", True]
+                                        , [0, 1, "large broken bad", True]
+                                        ], columns=["doc_id", "section_id", "section_text", "title"])
+
+        feature_list = parse_and_model.format_feature_list(feature_list=["screen"])
+
+        em_input = parse_and_model.build_explicit_models(text_set=section_list, feature_set=feature_list, lemmatize_words=False)
+
+        expected_model_background = [1 / 3, 1 / 6, 1 / 6, 1 / 6, 1 / 6]
+        expected_model_feature = [[0.218, 0.282, 0.282, 0.109, 0.109]]
+        expected_section_word_counts = {0: Counter({"large": 1, "clear": 1, "screen": 1})
+                                        ,1: Counter({"large": 1, "broken":1, "bad":1})}
+        expected_section_word_counts_matrix = [[1, 1, 1, 0, 0]
+                                              ,[1, 0, 0, 1, 1]]
+        expected_model_background_matrix = numpy.array([1 / 3, 1 / 6, 1 / 6, 1 / 6, 1 / 6])
+        expected_model_feature_matrix = numpy.array([[0.218], [0.282], [0.282], [0.109], [0.109]])
+        expected_vocab_lookup = {0: 'large', 1: 'clear', 2: 'screen', 3: 'broken', 4:'bad'}
+
+        self.assertEqual(True, expected_model_background == em_input["model_background"])
+        self.assertEqual(True, expected_model_feature == [[round(val, 3) for val in feature_model] for feature_model in em_input["model_feature"]])
+        #self.assertEqual(True, expected_section_word_counts == em_input["section_word_counts"])
+        self.assertEqual(True,
+                         numpy.array_equiv(expected_section_word_counts_matrix, csr_matrix.toarray(em_input["section_word_counts_matrix"])))
+        self.assertEqual(True, numpy.array_equiv(expected_model_background_matrix, csr_matrix.toarray(em_input["model_background_matrix"])))
+        self.assertEqual(True, numpy.array_equiv(expected_model_feature_matrix, numpy.round(csr_matrix.toarray(em_input["model_feature_matrix"]),3)))
+        self.assertEqual(True, expected_vocab_lookup == em_input["vocabulary_lookup"])
 
 
 # added for exploratory testing

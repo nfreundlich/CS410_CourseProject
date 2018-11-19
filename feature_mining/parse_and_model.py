@@ -1,14 +1,15 @@
 import pandas as pd
+import numpy as np
+from scipy.sparse import csr_matrix
+import metapy
 import spacy
-from collections import Counter
-from collections import defaultdict, OrderedDict
 from spacy.attrs import LOWER, ORTH
 import en_core_web_sm
+from collections import Counter
+from collections import defaultdict, OrderedDict
 import math
-import numpy
 from datetime import datetime
-import metapy
-from scipy.sparse import csr_matrix
+import time
 
 
 class ParseModel:
@@ -251,13 +252,19 @@ class ParseModel:
         # initialize Spacy model
         nlp = en_core_web_sm.load()
 
+        annotated_text = text_set['section_text'].values.tolist()
+        docs = nlp.pipe(annotated_text, batch_size=1000, n_threads=4)
+        section_list = []
+        for item in docs:
+            section_list.append(item)
+
         # loop over all rows in input data set
         for index, row in text_set.iterrows():
             # print the current text for debugging
             # print(str(row["section_id"]) + ": " + row["section_text"])
 
             # input the sentence into Spacy
-            section = nlp(row["section_text"])
+            section = section_list[index]#nlp(row["section_text"])
 
             # add each parsed word into a list
             # Note: won't catch capitalized stopwords, need to lowercase as part of pre-processing - also possible stop word
@@ -375,7 +382,7 @@ class ParseModel:
                 model_feature[index].append(tfidf_feature[index][word] / (model_feature_norms[index]))
 
         # translate section word counts into matrix for EM
-        section_word_counts_matrix=numpy.zeros(shape=(section_count, vocabulary_size))
+        section_word_counts_matrix=np.zeros(shape=(section_count, vocabulary_size))
         for section, word_list in section_word_counts.items():
             # print(section)
             for word, word_count in word_list.items():
@@ -385,8 +392,8 @@ class ParseModel:
                 section_word_counts_matrix[section, word_id] = word_count
 
         # translate models into matrices for EM
-        model_background_matrix = csr_matrix(numpy.array(model_background).T)
-        model_feature_matrix = csr_matrix(numpy.array(model_feature).T)
+        model_background_matrix = csr_matrix(np.array(model_background).T)
+        model_feature_matrix = csr_matrix(np.array(model_feature).T)
 
         # reverse vocabulary dictionary so it can be used to back-translate later
         vocabulary_lookup = {v: k for k, v in vocabulary.items()}
@@ -504,14 +511,19 @@ class ParseModel:
 
 
 if __name__ == '__main__':
+    start_time = time.time()
+
     pm = ParseModel()
 
     print("formatting feature list")
     feature_list = pm.format_feature_list(feature_list=["sound", "battery", ["screen", "display"]])
 
     print("reading annotated data")
-    annotated_data = pm.read_annotated_data(filename='demo_files/iPod.final', nlines=800)
+    annotated_data = pm.read_annotated_data(filename='demo_files/iPod.final', nlines=500)
 
     print("parsing text and building explicit feature models: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     em_input = pm.build_explicit_models(text_set=annotated_data["section_list"], feature_set=feature_list)
     print("parsing text and building explicit feature models: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+
+    end_time = time.time()
+    print("Elapsed: {} seconds".format(round(end_time - start_time, 4)))

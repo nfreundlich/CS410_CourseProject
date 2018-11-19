@@ -1,12 +1,21 @@
 import time
 
+
 class ExpectationMaximization:
     """
     Base class for Expectation - Maximization algorithm.
     Treats data preparation, looping, e-step and m-step.
+
+    Usage:
+        em = ExpectationMaximization()
+        em.em()
     """
 
     def __init__(self, dump_path="../tests/data/em_01/"):
+        """
+        Constructor
+        :param dump_path: path to save temporary files. Mostly used for testing.
+        """
         print(type(self).__name__, "- base init...")
 
         # Path used for testing
@@ -33,12 +42,26 @@ class ExpectationMaximization:
         self.pi = None
 
     def import_data(self):
+        """
+        Imports data from annotated text.
+        :return:
+        """
         print(type(self).__name__, "- base import data...")
 
     def initialize_parameters(self):
+        """
+        Creates parameters for model computation.
+        :return:
+        """
         print(type(self).__name__, "- base initialize parameters...")
 
     def em_loop(self):
+        """
+        Expectation maximization loop.
+        Executes e-step and m-step until a max number of iterations is reached
+        or until a delta between pi in two consecutive steps is less than a threshold.
+        :return: pi matrix
+        """
         print(type(self).__name__, "- base loop...")
         while self.max_iter:
             start_time_iteration = time.time()
@@ -61,6 +84,10 @@ class ExpectationMaximization:
         return 0.0
 
     def em(self):
+        """
+        Default chain for e-m algorithm.
+        :return: pi matrix.
+        """
         start_time = time.time()
 
         self.import_data()
@@ -71,6 +98,10 @@ class ExpectationMaximization:
         print("Elapsed: {} seconds".format(round(end_time - start_time, 4)))
 
     def _dump_hidden_parameters(self):
+        """
+        Dumps parameters to files, used for testing.
+        :return:
+        """
         print(type(self).__name__, "- base dump hidden parameters...")
 
 

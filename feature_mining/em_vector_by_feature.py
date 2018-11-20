@@ -5,7 +5,7 @@ from feature_mining import parse_and_model
 from datetime import datetime
 
 
-class ExpectationMaximizationVectorV2(ExpectationMaximization):
+class EmVectorByFeature(ExpectationMaximization):
     """
     Vectorized implementation of EM algorithm.
     """
@@ -308,7 +308,7 @@ class ExpectationMaximizationVectorV2(ExpectationMaximization):
 
 
 if __name__ == '__main__':
-    em = ExpectationMaximizationVectorV2()
+    em = EmVectorByFeature()
     em.em()
 
 """

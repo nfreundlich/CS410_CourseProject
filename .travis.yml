@@ -7,4 +7,4 @@ install:
   - python -m spacy download en
   # - pip install .
 # command to run tests
-script: pytest
+script: pytest --tb=line

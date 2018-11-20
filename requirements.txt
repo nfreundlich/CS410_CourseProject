@@ -4,7 +4,6 @@ chardet==3.0.4
 cymem==2.0.2
 cytoolz==0.9.0.1
 dill==0.2.8.2
-en-core-web-sm==2.0.0
 idna==2.7
 metapy==0.2.13
 msgpack==0.5.6

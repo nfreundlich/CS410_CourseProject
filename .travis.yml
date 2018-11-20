@@ -8,3 +8,9 @@ install:
   # - pip install .
 # command to run tests
 script: pytest --tb=line
+notifications:
+  email:
+    recipients:
+      - norbert4@illinois.edu
+    on_success: never # default: change
+    on_failure: always # default: always

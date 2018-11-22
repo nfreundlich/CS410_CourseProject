@@ -5,7 +5,7 @@ from feature_mining import parse_and_model
 from datetime import datetime
 
 
-class ExpectationMaximizationVectorV2(ExpectationMaximization):
+class EmVectorByFeature(ExpectationMaximization):
     """
     Vectorized implementation of EM algorithm.
     """
@@ -63,7 +63,7 @@ class ExpectationMaximizationVectorV2(ExpectationMaximization):
         feature_list = parse_and_model.format_feature_list(feature_list=["sound", "battery", ["screen", "display"]])
 
         print("reading annotated data")
-        annotated_data = parse_and_model.read_annotated_data(filename='feature_mining/demo_files/iPod.final', nlines=2)
+        annotated_data = parse_and_model.read_annotated_data(filename='feature_mining/demo_files/iPod.final', nlines=None)
 
         print("parsing text and building explicit feature models: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
         em_input = parse_and_model.build_explicit_models(text_set=annotated_data["section_list"], feature_set=feature_list)
@@ -308,7 +308,7 @@ class ExpectationMaximizationVectorV2(ExpectationMaximization):
 
 
 if __name__ == '__main__':
-    em = ExpectationMaximizationVectorV2()
+    em = EmVectorByFeature()
     em.em()
 
 """

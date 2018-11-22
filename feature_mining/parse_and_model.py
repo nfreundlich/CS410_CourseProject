@@ -252,11 +252,13 @@ class ParseModel:
         # initialize Spacy model
         nlp = en_core_web_sm.load()
 
+        start_time_local = time.time()
         annotated_text = text_set['section_text'].values.tolist()
-        docs = nlp.pipe(annotated_text, batch_size=1000, n_threads=4)
+        docs = nlp.pipe(annotated_text, batch_size=1000, n_threads=12)
         section_list = []
         for item in docs:
             section_list.append(item)
+        print("Elapsed while loading in nlp: {} seconds".format(round(time.time() - start_time_local, 4)))
 
         # loop over all rows in input data set
         for index, row in text_set.iterrows():
@@ -519,7 +521,7 @@ if __name__ == '__main__':
     feature_list = pm.format_feature_list(feature_list=["sound", "battery", ["screen", "display"]])
 
     print("reading annotated data")
-    annotated_data = pm.read_annotated_data(filename='demo_files/iPod.final', nlines=500)
+    annotated_data = pm.read_annotated_data(filename='../tests/data/parse_and_model/iPod.final', nlines=500)
 
     print("parsing text and building explicit feature models: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     em_input = pm.build_explicit_models(text_set=annotated_data["section_list"], feature_set=feature_list)

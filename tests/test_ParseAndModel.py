@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from unittest import TestCase
-from feature_mining import ParseModel
+from feature_mining import ParseAndModel
 import numpy as np
 import pandas as pd
 from collections import defaultdict, OrderedDict, Counter
@@ -11,14 +11,14 @@ from scipy.sparse import csr_matrix
 class TestParseAndModel(TestCase):
 
     def test_format_feature_list_basic(self):
-        pm = ParseModel()
+        #pm = ParseAndModel()
 
         df = pd.DataFrame([["sound", 0, 0],
                            ["battery", 1, 1],
                            ["screen", 2, 2],
                            ["display", 3, 3]], columns=["feature", "feature_id", "feature_term_id"])
 
-        feature_list = pm.format_feature_list(feature_list=
+        feature_list = ParseAndModel.format_feature_list(feature_list=
                                                            ["sound",
                                                             "battery",
                                                             "screen",
@@ -29,14 +29,14 @@ class TestParseAndModel(TestCase):
         self.assertEqual(True, pd.DataFrame.equals(df, feature_list))
 
     def test_format_feature_list_synonym(self):
-        pm = ParseModel()
+        #pm = ParseAndModel()
 
         df = pd.DataFrame([["sound", 0, 0],
                            ["battery", 1, 1],
                            ["screen", 2, 2],
                            ["display", 2, 3]], columns=["feature", "feature_id", "feature_term_id"])
 
-        feature_list = pm.format_feature_list(feature_list=
+        feature_list = ParseAndModel.format_feature_list(feature_list=
                                                            ["sound",
                                                             "battery",
                                                             ["screen", "display"]]
@@ -46,21 +46,21 @@ class TestParseAndModel(TestCase):
         self.assertEqual(True, pd.DataFrame.equals(df, feature_list))
 
     def test_read_annotated_dat_one_line(self):
-        pm = ParseModel()
+        #pm = ParseAndModel()
 
         df_section_list = pd.DataFrame([[0, 0, "very pleased", True]],
                                        columns=["doc_id", "section_id", "section_text", "title"])
         df_feature_mapping = pd.DataFrame([])
         df_feature_list = defaultdict(int)
 
-        oneLine = pm.read_annotated_data(filename='data/parse_and_model/iPod.final', nlines=1)
+        oneLine = ParseAndModel.read_annotated_data(filename='data/parse_and_model/iPod.final', nlines=1)
 
         self.assertEqual(True, pd.DataFrame.equals(df_section_list, oneLine["section_list"]))
         self.assertEqual(True, pd.DataFrame.equals(df_feature_mapping, oneLine["feature_mapping"]))
         # self.assertEqual(0, ((df_feature_list > oneLine["feature_list"]) - (df_feature_list < oneLine["feature_list"])))
 
     def test_read_annotated_dat_one_feature_implicit(self):
-        pm = ParseModel()
+        #pm = ParseAndModel()
 
         df_section_list = pd.DataFrame([[0, 0, "it is handy to carry around because of the  and easy to store", False]],
                                        columns=["doc_id", "section_id", "section_text", "title"])
@@ -68,7 +68,7 @@ class TestParseAndModel(TestCase):
                                           columns=["doc_id", "feature", "is_explicit", "section_id"])
         df_feature_list = defaultdict(int)
 
-        one_line = pm.read_annotated_data(filename='data/parse_and_model/iPod.final', nlines=1,
+        one_line = ParseAndModel.read_annotated_data(filename='data/parse_and_model/iPod.final', nlines=1,
                                                       start_line=6)
 
         self.assertEqual(True, pd.DataFrame.equals(df_section_list, one_line["section_list"]))
@@ -76,7 +76,7 @@ class TestParseAndModel(TestCase):
         # self.assertEqual(0, ((df_feature_list > one_line["feature_list"]) - (df_feature_list < one_line["feature_list"])))
 
     def test_read_annotated_dat_one_feature_explicit(self):
-        pm = ParseModel()
+        #pm = ParseAndModel()
 
         df_section_list = pd.DataFrame([[0, 0, "the battery life is outstanding (again, compared to the mini)", False]],
                                        columns=["doc_id", "section_id", "section_text", "title"])
@@ -85,7 +85,7 @@ class TestParseAndModel(TestCase):
         df_feature_list = defaultdict(int)
         df_feature_list["battery"] = 1
 
-        one_line = pm.read_annotated_data(filename='data/parse_and_model/iPod.final', nlines=1,
+        one_line = ParseAndModel.read_annotated_data(filename='data/parse_and_model/iPod.final', nlines=1,
                                                       start_line=13)
 
         self.assertEqual(True, pd.DataFrame.equals(df_section_list, one_line["section_list"]))
@@ -93,7 +93,7 @@ class TestParseAndModel(TestCase):
         self.assertEqual(True, dict(df_feature_list) == dict(one_line["feature_list"]))
 
     def test_read_annotated_dat_two_feature_explicit(self):
-        pm = ParseModel()
+        #pm = ParseAndModel()
 
         df_section_list = pd.DataFrame([[0, 0, "my son loves the nano, it is small and has a good size screen", False]],
                                        columns=["doc_id", "section_id", "section_text", "title"])
@@ -104,7 +104,7 @@ class TestParseAndModel(TestCase):
         df_feature_list["screen"] = 1
         df_feature_list["size"] = 1
 
-        one_line = pm.read_annotated_data(filename='data/parse_and_model/iPod.final', nlines=1,
+        one_line = ParseAndModel.read_annotated_data(filename='data/parse_and_model/iPod.final', nlines=1,
                                                       start_line=622)
 
         self.assertEqual(True, pd.DataFrame.equals(df_section_list, one_line["section_list"]))
@@ -112,7 +112,7 @@ class TestParseAndModel(TestCase):
         self.assertEqual(True, dict(df_feature_list) == dict(one_line["feature_list"]))
 
     def test_read_annotated_dat_complicated_reviews(self):
-        pm = ParseModel()
+        #pm = ParseAndModel()
 
         df_section_list = pd.DataFrame([[0, 0, "it could be better", True]
                                            , [0, 1,
@@ -140,7 +140,7 @@ class TestParseAndModel(TestCase):
         df_feature_list["battery"] = 1
         df_feature_list["sound"] = 2
 
-        one_line = pm.read_annotated_data(filename='data/parse_and_model/iPod.final', nlines=10,
+        one_line = ParseAndModel.read_annotated_data(filename='data/parse_and_model/iPod.final', nlines=10,
                                                       start_line=660)
 
         self.assertEqual(True, pd.DataFrame.equals(df_section_list, one_line["section_list"]))
@@ -148,14 +148,14 @@ class TestParseAndModel(TestCase):
         self.assertEqual(True, dict(df_feature_list) == dict(one_line["feature_list"]))
 
     def test_bem_one_section(self):
-        pm = ParseModel()
+        #pm = ParseAndModel()
 
         section_list = pd.DataFrame([[0, 0, "large clear screen", True]
                                         ], columns=["doc_id", "section_id", "section_text", "title"])
 
-        feature_list = pm.format_feature_list(feature_list=["screen"])
+        feature_list = ParseAndModel.format_feature_list(feature_list=["screen"])
 
-        em_input = pm.build_explicit_models(text_set=section_list, feature_set=feature_list)
+        em_input = ParseAndModel.build_explicit_models(text_set=section_list, feature_set=feature_list)
 
         expected_model_background=[1/3, 1/3, 1/3]
         expected_model_feature=[[1/3, 1/3, 1/3]]
@@ -174,15 +174,15 @@ class TestParseAndModel(TestCase):
         self.assertEqual(True, expected_vocab_lookup == em_input["vocabulary_lookup"])
 
     def test_bem_two_section(self):
-        pm = ParseModel()
+        #pm = ParseAndModel()
 
         section_list = pd.DataFrame([[0, 0, "large clear screen", True]
                                         , [0, 1, "large broken bad", True]
                                         ], columns=["doc_id", "section_id", "section_text", "title"])
 
-        feature_list = pm.format_feature_list(feature_list=["screen"])
+        feature_list = ParseAndModel.format_feature_list(feature_list=["screen"])
 
-        em_input = pm.build_explicit_models(text_set=section_list, feature_set=feature_list, lemmatize_words=False)
+        em_input = ParseAndModel.build_explicit_models(text_set=section_list, feature_set=feature_list, lemmatize_words=False)
 
         expected_model_background = [1 / 3, 1 / 6, 1 / 6, 1 / 6, 1 / 6]
         expected_model_feature = [[0.218, 0.282, 0.282, 0.109, 0.109]]
@@ -206,8 +206,8 @@ class TestParseAndModel(TestCase):
 
 # added for exploratory testing
 if __name__ == '__main__':
-    pm = ParseModel()
+    #pm = ParseAndModel()
 
     # format_feature_list, read_annotated_data, build_explicit_models
-    feature_list = pm.format_feature_list(feature_list=["sound", "battery", ["screen", "display"]])
+    feature_list = ParseAndModel.format_feature_list(feature_list=["sound", "battery", ["screen", "display"]])
     pass

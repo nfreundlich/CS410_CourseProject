@@ -12,20 +12,33 @@ from datetime import datetime
 import time
 
 
-class ParseModel:
+class ParseAndModel:
     """
     Treats data input chain.
     Based on this data, computes matrices for reviews and features.
     """
 
-    def __init__(self):
+    def __init__(self, feature_list: list, filename: str, nlines: int = None, remove_stopwords: bool = False
+                 , start_line: int = 0, lemmatize_words: bool = True):
         """
         Constructor
         """
-        pass
+
+        # Run feature list formatter and save output
+        self.feature_list = ParseAndModel.format_feature_list(feature_list)
+
+        # TODO: make the method running here an arugment that can be one of the other file readers
+        # Run read annotated data
+        self.parsed_text = ParseAndModel.read_annotated_data(filename=filename, nlines=nlines, start_line=start_line)
+
+        # Build the explicit models and store the output
+        self.explicit_models = ParseAndModel.build_explicit_models(text_set=self.parsed_text["section_list"],
+                                                          feature_set=self.feature_list,
+                                                          remove_stopwords=remove_stopwords,
+                                                          lemmatize_words=lemmatize_words)
 
     # TODO: add tests
-    def format_feature_list(self, feature_list: list) -> pd.DataFrame:
+    def format_feature_list(feature_list: list) -> pd.DataFrame:
         """
         This function takes a list of strings and/or lists of strings and converts them to a DataFrame with ids. Terms in
         nested lists will be treated as synonyms and given the same feature id
@@ -75,7 +88,7 @@ class ParseModel:
         return feature_df
 
     # TODO: add tests, alterate file formats
-    def read_annotated_data(self, filename: str, nlines: int =None, start_line: int=0) -> dict:
+    def read_annotated_data(filename: str, nlines: int = None, start_line: int = 0) -> dict:
         """
         Reads in Santu's annotated files and records the explicit features and implicit features annotated in the file
 
@@ -108,13 +121,13 @@ class ParseModel:
         section_list = []
         feature_section_mapping = []
         feature_list = defaultdict(int)
-        line_number=0
+        line_number = 0
 
         with open(filename, 'r') as input_file:
             for line in input_file:
 
                 # Skip line if before specified start
-                if line_number<start_line:
+                if line_number < start_line:
                     # Increment line number
                     line_number += 1
                     continue
@@ -160,11 +173,12 @@ class ParseModel:
                             explicit_feature = True
 
                         # Get the actual text of the feature
-                        feature_text = feature .split('[@]')[0]
+                        feature_text = feature.split('[@]')[0]
 
                         # Add the feature and section id to the data set
-                        feature_section_mapping.append({"doc_id": doc_id, "section_id": section_id, "feature": feature_text,
-                                                        "is_explicit": explicit_feature})
+                        feature_section_mapping.append(
+                            {"doc_id": doc_id, "section_id": section_id, "feature": feature_text,
+                             "is_explicit": explicit_feature})
 
                         # Increment the feature in the unique feature list
                         feature_list[feature_text] += 1
@@ -177,8 +191,6 @@ class ParseModel:
                 section_id += 1
                 # print(line)
 
-
-
                 # Check if max number of lines has been reached yet
                 if nlines is not None:
                     if section_id >= nlines:
@@ -189,7 +201,7 @@ class ParseModel:
                     feature_list=feature_list)
 
     # TODO: Slow, needs to be optimized, unit tests need to be added
-    def build_explicit_models(self, text_set: pd.DataFrame, feature_set: pd.DataFrame, remove_stopwords: bool = False,
+    def build_explicit_models(text_set: pd.DataFrame, feature_set: pd.DataFrame, remove_stopwords: bool = False,
                               lemmatize_words: bool = True) -> dict:
         """
         This function builds a background model, set of topic models and summarizes the counts of words in each sentence
@@ -241,11 +253,12 @@ class ParseModel:
         section_word_counts = dict()  # count of words in each section
         collection_word_counts = Counter()  # count of all words in all section
         word_section_counter = Counter()  # count of number of sections with word
-        feature_word_counter = defaultdict(Counter)  # keep track of words appearing in section w/ explicit feature mention
+        feature_word_counter = defaultdict(
+            Counter)  # keep track of words appearing in section w/ explicit feature mention
         feature_section_mapping = []  # keeps a list of the sentence ids associated with each feature (many-to-many mapping)
 
         vocabulary = OrderedDict()
-        current_word_id=-1
+        current_word_id = -1
 
         unique_feature_ids = feature_set.feature_id.unique()
 
@@ -264,7 +277,7 @@ class ParseModel:
             # print(str(row["section_id"]) + ": " + row["section_text"])
 
             # input the sentence into Spacy
-            section = section_list[index]#nlp(row["section_text"])
+            section = section_list[index]  # nlp(row["section_text"])
 
             # add each parsed word into a list
             # Note: won't catch capitalized stopwords, need to lowercase as part of pre-processing - also possible stop word
@@ -359,8 +372,8 @@ class ParseModel:
                 # Formula 4, section 4.2, using base 2 logs, also adds +1 from Formula 5
                 #########################################################################
                 tfidf = math.log(1 + feature_word_counter[current_feature][word], 2) \
-                    * math.log(1 + section_count / word_section_counter[word], 2) \
-                    + 1
+                        * math.log(1 + section_count / word_section_counter[word], 2) \
+                        + 1
                 # print(str(tfidf))
 
                 tfidf_feature[current_feature][word] = tfidf
@@ -382,7 +395,7 @@ class ParseModel:
                 model_feature[index].append(tfidf_feature[index][word] / (model_feature_norms[index]))
 
         # translate section word counts into matrix for EM
-        section_word_counts_matrix=np.zeros(shape=(section_count, vocabulary_size))
+        section_word_counts_matrix = np.zeros(shape=(section_count, vocabulary_size))
         for section, word_list in section_word_counts.items():
             # print(section)
             for word, word_count in word_list.items():
@@ -406,8 +419,9 @@ class ParseModel:
         return model_results
 
     # TODO: Try metapy impelementation (should mostly be a swap of the NLP call)
-    def build_explicit_models_metapy(self, text_set: pd.DataFrame, feature_set: pd.DataFrame, remove_stopwords: bool = False,
-                              lemmatize_words: bool = True) -> dict:
+    def build_explicit_models_metapy(text_set: pd.DataFrame, feature_set: pd.DataFrame,
+                                     remove_stopwords: bool = False,
+                                     lemmatize_words: bool = True) -> dict:
         """
         This function builds a background model, set of topic models and summarizes the counts of words in each sentence
             to prepare for EM optimization
@@ -455,11 +469,12 @@ class ParseModel:
                 key: word id used in models, matrices, etc.
                 value: actual word
         """
-        return()
+        return ()
 
     # TODO: Try nltk impelementation (should mostly be a swap of the NLP call)
-    def build_explicit_models_nltk(self, text_set: pd.DataFrame, feature_set: pd.DataFrame, remove_stopwords: bool = False,
-                              lemmatize_words: bool = True) -> dict:
+    def build_explicit_models_nltk(text_set: pd.DataFrame, feature_set: pd.DataFrame,
+                                   remove_stopwords: bool = False,
+                                   lemmatize_words: bool = True) -> dict:
         """
         This function builds a background model, set of topic models and summarizes the counts of words in each sentence
             to prepare for EM optimization
@@ -507,22 +522,22 @@ class ParseModel:
                 key: word id used in models, matrices, etc.
                 value: actual word
         """
-        return()
+        return ()
 
 
 if __name__ == '__main__':
     start_time = time.time()
 
-    pm = ParseModel()
+    # pm = ParseModel()
 
     print("formatting feature list")
-    feature_list = pm.format_feature_list(feature_list=["sound", "battery", ["screen", "display"]])
+    feature_list = ParseAndModel.format_feature_list(feature_list=["sound", "battery", ["screen", "display"]])
 
     print("reading annotated data")
-    annotated_data = pm.read_annotated_data(filename='demo_files/iPod.final', nlines=500)
+    annotated_data = ParseAndModel.read_annotated_data(filename='demo_files/iPod.final', nlines=500)
 
     print("parsing text and building explicit feature models: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-    em_input = pm.build_explicit_models(text_set=annotated_data["section_list"], feature_set=feature_list)
+    em_input = ParseAndModel.build_explicit_models(text_set=annotated_data["section_list"], feature_set=feature_list)
     print("parsing text and building explicit feature models: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
     end_time = time.time()

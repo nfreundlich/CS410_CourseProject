@@ -3,7 +3,7 @@ from scipy.sparse import csr_matrix
 from feature_mining.em_base import ExpectationMaximization
 from feature_mining import parse_and_model
 from datetime import datetime
-
+import os
 
 class EmVectorByFeature(ExpectationMaximization):
     """
@@ -59,14 +59,18 @@ class EmVectorByFeature(ExpectationMaximization):
 
         # TODO: determine how best to pass in necessary arguments
 
+        print(os.getcwd())
+
+        pm_inst = parse_and_model.ParseAndModel()
+
         print("formatting feature list")
-        feature_list = parse_and_model.format_feature_list(feature_list=["sound", "battery", ["screen", "display"]])
+        feature_list = pm_inst.format_feature_list(feature_list=["sound", "battery", ["screen", "display"]])
 
         print("reading annotated data")
-        annotated_data = parse_and_model.read_annotated_data(filename='feature_mining/demo_files/iPod.final', nlines=None)
+        annotated_data = pm_inst.read_annotated_data(filename='demo_files/iPod.final', nlines=None)
 
         print("parsing text and building explicit feature models: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-        em_input = parse_and_model.build_explicit_models(text_set=annotated_data["section_list"], feature_set=feature_list)
+        em_input = pm_inst.build_explicit_models(text_set=annotated_data["section_list"], feature_set=feature_list)
         print("parsing text and building explicit feature models: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
         # Parameters related to collection size
@@ -295,6 +299,9 @@ class EmVectorByFeature(ExpectationMaximization):
                 # if not first feature then add on to pi matrix
                 self.pi_matrix = np.column_stack((self.pi_matrix, new_pi))
                 pi_sums += new_pi
+
+        # Pi sums is a dense matrix so we replace 0s with 1s
+        pi_sums = np.where(pi_sums == 0, 1, pi_sums)
 
         self.pi_matrix = np.multiply(self.pi_matrix, np.power(pi_sums, -1))
 

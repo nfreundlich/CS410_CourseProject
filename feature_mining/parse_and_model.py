@@ -37,6 +37,9 @@ class ParseAndModel:
                                                           remove_stopwords=remove_stopwords,
                                                           lemmatize_words=lemmatize_words)
 
+        self.parsed_text2 = ParseAndModel.read_file_data(filename=filename, nlines=nlines, start_line=start_line)
+
+
     # TODO: add tests
     def format_feature_list(feature_list: list) -> pd.DataFrame:
         """
@@ -199,6 +202,193 @@ class ParseAndModel:
         # Bundle and return data set
         return dict(section_list=pd.DataFrame(section_list), feature_mapping=pd.DataFrame(feature_section_mapping),
                     feature_list=feature_list)
+
+        # TODO: add tests, alterate file formats
+        def read_file_data(filename: str, nlines: int = None, start_line: int = 0) -> dict:
+            """
+            Reads in Santu's annotated files and records the explicit features and implicit features annotated in the file
+
+            ex. annotated_data = read_annotated_data(filename='demo_files/iPod.final', nlines=200)
+            ex. annotated_data = read_annotated_data(filename='demo_files/iPod.final', nlines=2)
+
+            :param filename: Filename for the annotated data set
+            :param nlines: Maximum number of lines from the file to read or None to read all lines
+            :param start_line: Optional parameter, specific line number to start at, mostly for testing purposes
+            :return: a dictionary with the following data
+                section_list: DataFrame with the following form
+                    | doc_id (int)  | section_id (int)  | section_text (str)    | title (bool)  |
+                    doc_id: integer id for the document
+                    section_id: integer id for the section
+                    section_text: cleaned (lowercase, trimmed) section text
+                    title: True if the line is a title, False otherwise
+                feature_section_mapping: DataFrame
+                    | doc_id (int)  | feature (str) | is_explicit (bool)    | section_id (int)  |
+                    doc_id: integer id for the document
+                    feature: the string form of the feature in the annotation
+                    is_explicit: False if the feature was marked in the annotation as an implicit mention, True otherwise
+                    section_id: integer id for the section
+                feature_list: dictionary with each feature and the number of sections it appears in
+                    key: feature name
+                    value: number of sections in which the feature appears
+            """
+
+            doc_id = -1
+            section_id = 0
+            section_list = []
+            feature_section_mapping = []
+            feature_list = defaultdict(int)
+            line_number = 0
+
+            with open(filename, 'r') as input_file:
+                for line in input_file:
+
+                    # Skip line if before specified start
+                    if line_number < start_line:
+                        # Increment line number
+                        line_number += 1
+                        continue
+                    else:
+                        # Increment line number
+                        line_number += 1
+
+                    # Section is from new doc, increment doc id
+                    if '[t]' in line:
+                        doc_id += 1
+                        is_title = True
+                        line_text = line.split('[t]')[1].strip().lower()
+
+                    # Section is from new doc, increment doc id
+                    elif line.startswith('*'):
+                        doc_id += 1
+                        is_title = True
+                        line_text = line.split('*')[1].strip().lower()
+
+                    # Section not from new doc, just get cleaned text
+                    else:
+                        is_title = False
+                        line_text = line.split('##')[1].strip().lower()
+
+                    # If we still haven't seen a title increment the document id anyway
+                    if doc_id == -1:
+                        doc_id += 1
+
+                    # Look for feature annotations attached to the line
+                    feature_string = line.split('##')[0].split(',')
+                    # print(feature_string)
+                    if not is_title and feature_string[0] != '':
+
+                        # Loop through all the features found in the annotation
+                        for feature in feature_string:
+                            # print(feature)
+
+                            # Check if the feature in the annotation is marked as an implicit mention
+                            if '[u]' in feature:
+                                explicit_feature = False
+                                # print('implicit')
+                            else:
+                                explicit_feature = True
+
+                            # Get the actual text of the feature
+                            feature_text = feature.split('[@]')[0]
+
+                            # Add the feature and section id to the data set
+                            feature_section_mapping.append(
+                                {"doc_id": doc_id, "section_id": section_id, "feature": feature_text,
+                                 "is_explicit": explicit_feature})
+
+                            # Increment the feature in the unique feature list
+                            feature_list[feature_text] += 1
+
+                    # Add section line to data set
+                    section_list.append(
+                        {"doc_id": doc_id, "section_id": section_id, "section_text": line_text, "title": is_title})
+
+                    # Increment section id
+                    section_id += 1
+                    # print(line)
+
+                    # Check if max number of lines has been reached yet
+                    if nlines is not None:
+                        if section_id >= nlines:
+                            break
+
+            # Bundle and return data set
+            return dict(section_list=pd.DataFrame(section_list), feature_mapping=pd.DataFrame(feature_section_mapping),
+                        feature_list=feature_list)
+
+    # TODO: add tests, alterate file formats
+    def read_file_data(filename: str, nlines: int = None, start_line: int = 0) -> dict:
+        """
+        Reads in Santu's annotated files and records the explicit features and implicit features annotated in the file
+
+        ex. annotated_data = read_annotated_data(filename='demo_files/iPod.final', nlines=200)
+        ex. annotated_data = read_annotated_data(filename='demo_files/iPod.final', nlines=2)
+
+        :param filename: Filename for the annotated data set
+        :param nlines: Maximum number of lines from the file to read or None to read all lines
+        :param start_line: Optional parameter, specific line number to start at, mostly for testing purposes
+        :return: a dictionary with the following data
+            section_list: DataFrame with the following form
+                | doc_id (int)  | section_id (int)  | section_text (str)    | title (bool)  |
+                doc_id: integer id for the document
+                section_id: integer id for the section
+                section_text: cleaned (lowercase, trimmed) section text
+                title: True if the line is a title, False otherwise
+            feature_section_mapping: DataFrame
+                | doc_id (int)  | feature (str) | is_explicit (bool)    | section_id (int)  |
+                doc_id: integer id for the document
+                feature: the string form of the feature in the annotation
+                is_explicit: False if the feature was marked in the annotation as an implicit mention, True otherwise
+                section_id: integer id for the section
+            feature_list: dictionary with each feature and the number of sections it appears in
+                key: feature name
+                value: number of sections in which the feature appears
+        """
+
+        doc_id = -1
+        section_id = 0
+        section_list = []
+        feature_section_mapping = []
+        feature_list = defaultdict(int)
+        line_number = 0
+
+        with open(filename, 'r') as input_file:
+            for line in input_file:
+
+                # Skip line if before specified start
+                if line_number < start_line:
+                    # Increment line number
+                    line_number += 1
+                    continue
+                else:
+                    # Increment line number
+                    line_number += 1
+
+                # Each line is new doc
+                doc_id += 1
+
+                # Parse doc and split into sentences
+                # TODO: add a sentence tokenizer here
+                line_text=''
+
+                # Add section line to data set
+                section_list.append(
+                    {"doc_id": doc_id, "section_id": section_id, "section_text": line_text})
+
+                # Increment section id
+                section_id += 1
+                # print(line)
+
+                # Check if max number of lines has been reached yet
+                if nlines is not None:
+                    if section_id >= nlines:
+                        break
+
+        # Bundle and return data set
+        return dict(section_list=pd.DataFrame(section_list), feature_mapping=pd.DataFrame(feature_section_mapping),
+                    feature_list=feature_list)
+
+
 
     # TODO: Slow, needs to be optimized, unit tests need to be added
     def build_explicit_models(text_set: pd.DataFrame, feature_set: pd.DataFrame, remove_stopwords: bool = False,

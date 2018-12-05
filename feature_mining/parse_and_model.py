@@ -31,14 +31,14 @@ class ParseAndModel:
         if self.feature_list is None:
             logging.warning(" >No feature list specified, skipping feature list formatting")
         else:
-            ParseAndModel.format_feature_list()
+            self.format_feature_list()
 
         # TODO: make the method running here an arugment that can be one of the other file readers
         # Run read annotated data (or notify user this is being skipped)
         if filename is None:
             logging.warning(" >No filename specified, skipping parse step")
         else:
-            ParseAndModel.read_annotated_data(filename=filename, nlines=nlines, start_line=start_line)
+            self.read_annotated_data(filename=filename, nlines=nlines, start_line=start_line)
 
         # Build the explicit models and store the output
         if self.formatted_feature_list is None:
@@ -46,9 +46,7 @@ class ParseAndModel:
         elif self.parsed_text is None:
             logging.warning(" >No parsed text present, can't build explicit models")
         else:
-            self.explicit_models = ParseAndModel.build_explicit_models(text_set=self.parsed_text["section_list"],
-                                                          feature_set=self.feature_list,
-                                                          remove_stopwords=remove_stopwords,
+            self.build_explicit_models(remove_stopwords=remove_stopwords,
                                                           lemmatize_words=lemmatize_words)
 
         # self.parsed_text2 = ParseAndModel.read_file_data(filename=filename, nlines=nlines, start_line=start_line)
@@ -617,7 +615,7 @@ class ParseAndModel:
 
         # translate models into matrices for EM
         model_background_matrix = csr_matrix(np.array(model_background).T)
-        model_feature_matrix = csr_matrix(np.array(model_feature).T)
+        model_feature_matrix = np.array(model_feature).T
 
         # reverse vocabulary dictionary so it can be used to back-translate later
         vocabulary_lookup = {v: k for k, v in vocabulary.items()}

@@ -2,6 +2,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 from feature_mining.em_base import ExpectationMaximization
 from feature_mining import parse_and_model
+from feature_mining import ParseAndModel
 from datetime import datetime
 import os
 
@@ -61,27 +62,33 @@ class EmVectorByFeature(ExpectationMaximization):
 
         print(os.getcwd())
 
-        pm_inst = parse_and_model.ParseAndModel()
+        pm_inst = ParseAndModel(feature_list=["sound", "battery", ["screen", "display"]], filename='demo_files/iPod.final', nlines=5)
 
         print("formatting feature list")
-        feature_list = pm_inst.format_feature_list(feature_list=["sound", "battery", ["screen", "display"]])
+        #feature_list = pm_inst.format_feature_list(feature_list=["sound", "battery", ["screen", "display"]])
 
         print("reading annotated data")
-        annotated_data = pm_inst.read_annotated_data(filename='demo_files/iPod.final', nlines=None)
+        #annotated_data = pm_inst.read_annotated_data(filename='demo_files/iPod.final', nlines=None)
 
         print("parsing text and building explicit feature models: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-        em_input = pm_inst.build_explicit_models(text_set=annotated_data["section_list"], feature_set=feature_list)
+        #em_input = pm_inst.build_explicit_models(text_set=annotated_data["section_list"], feature_set=feature_list)
         print("parsing text and building explicit feature models: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
         # Parameters related to collection size
-        self.m = em_input["section_word_counts_matrix"].shape[0]
-        self.v = em_input["section_word_counts_matrix"].shape[1]
-        self.f = em_input["model_feature_matrix"].shape[1]
+        # self.m = em_input["section_word_counts_matrix"].shape[0]
+        # self.v = em_input["section_word_counts_matrix"].shape[1]
+        # self.f = em_input["model_feature_matrix"].shape[1]
+        self.m = pm_inst.model_results["section_word_counts_matrix"].shape[0]
+        self.v = pm_inst.model_results["section_word_counts_matrix"].shape[1]
+        self.f = pm_inst.model_results["model_feature_matrix"].shape[1]
 
         # Parameters computed from collection
-        self.reviews_matrix = em_input["section_word_counts_matrix"]
-        self.topic_model = em_input["model_feature_matrix"].toarray() # TODO remove toarray after fixing parse and model
-        self.background_probability = em_input["model_background_matrix"]
+        # self.reviews_matrix = em_input["section_word_counts_matrix"]
+        # self.topic_model = em_input["model_feature_matrix"].toarray() # TODO remove toarray after fixing parse and model
+        # self.background_probability = em_input["model_background_matrix"]
+        self.reviews_matrix = pm_inst.model_results["section_word_counts_matrix"]
+        self.topic_model = pm_inst.model_results["model_feature_matrix"].toarray() # TODO remove toarray after fixing parse and model
+        self.background_probability = pm_inst.model_results["model_background_matrix"]
 
 
     def import_data_temporary(self):
@@ -222,11 +229,11 @@ class EmVectorByFeature(ExpectationMaximization):
         #        self.reviews_binary[sentence].reshape(self.v, 1).multiply(self.topic_model_matrix)))
 
         # TODO disable when testing is done - currently starting with even weights
-        if True:
+        if False:
             self.pi_matrix = np.full((self.m, self.f), 1/self.f)
 
         # TODO: enable this code when ready to generate random pi-s
-        if False:
+        if True:
             self.pi_matrix = np.random.dirichlet(np.ones(self.m), self.f).transpose()
 
     def e_step(self):
@@ -309,6 +316,7 @@ class EmVectorByFeature(ExpectationMaximization):
 
     def compute_cost(self):
         print(type(self).__name__, '- compute cost...')
+        # TODO: fix distance formula
         delta = np.subtract(self.pi_matrix, self.previous_pi_matrix)
 
         return np.max(np.positive(delta))

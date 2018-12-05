@@ -1,21 +1,31 @@
 # -*- coding: utf-8 -*-
-
+import unittest
 from unittest import TestCase
 from feature_mining import ExpectationMaximizationVector
 import numpy as np
-from scipy.sparse import csr_matrix
+import os
 
 
 class TestExpectationMaximizationVector(TestCase):
+    def __init__(self, *args, **kwargs):
+        super(TestExpectationMaximizationVector, self).__init__(*args, **kwargs)
+
+    def setUp(self):
+        print("CWD: ", os.getcwd())
+        if 'tests' in os.getcwd():
+            self.dump_path = "./data/em_01/"
+        else:
+            self.dump_path = "./tests/data/em_01/"
+
+
     def test_e_step_hp_01(self):
-        dump_path = "./tests/data/em_01/"
-        em = ExpectationMaximizationVector(dump_path=dump_path)
+        em = ExpectationMaximizationVector(dump_path=self.dump_path)
         em.em()
 
         hp_em_vector_one_sentence_for_testing = em.hidden_parameters[0]
 
         print("Values computed by e_step_vector:")
-        hp_updated_by_santu = np.load(dump_path + "HP_updated.npy")
+        hp_updated_by_santu = np.load(self.dump_path + "HP_updated.npy")
         sentence = 0
         print(em.features_map.keys())
         for i in np.where(em.reviews_matrix[sentence].todense() > 0)[1]:
@@ -40,12 +50,11 @@ class TestExpectationMaximizationVector(TestCase):
         self.assertEqual(True, first_step_ok)
 
     def test_e_step_hpb_01(self):
-        dump_path = "./tests/data/em_01/"
-        em = ExpectationMaximizationVector(dump_path=dump_path)
+        em = ExpectationMaximizationVector(dump_path=self.dump_path)
         em.em()
 
         hp_background_em_vector = em.hidden_parameters_background[0].todense().T
-        hpb_updated_by_expectation_minimization_original = np.load(dump_path + "HPB_Updated.npy")
+        hpb_updated_by_expectation_minimization_original = np.load(self.dump_path + "HPB_Updated.npy")
 
         background_one_sentence_ok = True
         for i in np.where(hp_background_em_vector > 0)[0]:
@@ -56,13 +65,13 @@ class TestExpectationMaximizationVector(TestCase):
 
         self.assertEqual(True, background_one_sentence_ok)
 
+    @unittest.skip("DENOM not accessible. To reactivate when file recovered.")
     def test_compute_denom(self):
-        dump_path = "./tests/data/em_01/"
-        em = ExpectationMaximizationVector(dump_path=dump_path)
+        em = ExpectationMaximizationVector(dump_path=self.dump_path)
         em.em()
 
         my_denom = em.denom
-        denom_original = np.load(dump_path + "DENOM.npy").item()
+        denom_original = np.load(self.dump_path + "DENOM.npy").item()
 
         print("denom original: ", denom_original)
         print("my denom: " , my_denom)
@@ -70,13 +79,13 @@ class TestExpectationMaximizationVector(TestCase):
 
         self.assertEqual(True, np.fabs(my_denom - denom_original) < 0.001)
 
+    @unittest.skip("NOM not accessible. To reactivate when file recovered.")
     def test_compute_nom(self):
-        dump_path = "./tests/data/em_01/"
-        em = ExpectationMaximizationVector(dump_path=dump_path)
+        em = ExpectationMaximizationVector(dump_path=self.dump_path)
         em.em()
 
         my_nom = em.nom
-        nom_original = np.load(dump_path + "NOM.npy").item()
+        nom_original = np.load(self.dump_path + "NOM.npy").item()
 
         print("nom original: ", nom_original)
         print("my nom: " , my_nom)
@@ -84,11 +93,10 @@ class TestExpectationMaximizationVector(TestCase):
         self.assertEqual(True, np.fabs(my_nom - nom_original) < 0.001)
 
     def test_m_step(self):
-        dump_path = "./tests/data/em_01/"
-        em = ExpectationMaximizationVector(dump_path=dump_path)
+        em = ExpectationMaximizationVector(dump_path=self.dump_path)
         em.em()
 
-        pi_updated_by_santu = np.load(dump_path + "PI_updated.npy")
+        pi_updated_by_santu = np.load(self.dump_path + "PI_updated.npy")
         pi_updated = em.pi_matrix[0].reshape(1,em.f)
 
         print("Pi 0 updated by original", pi_updated_by_santu)

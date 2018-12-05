@@ -6,6 +6,7 @@ from feature_mining import ParseAndModel
 from datetime import datetime
 import os
 
+
 class EmVectorByFeature(ExpectationMaximization):
     """
     Vectorized implementation of EM algorithm.
@@ -311,8 +312,6 @@ class EmVectorByFeature(ExpectationMaximization):
         pi_sums = np.where(pi_sums == 0, 1, pi_sums)
 
         self.pi_matrix = np.multiply(self.pi_matrix, np.power(pi_sums, -1))
-
-
 
     def compute_cost(self):
         print(type(self).__name__, '- compute cost...')

@@ -4,6 +4,7 @@
 # pypi
 build/*
 gflm.egg-info/*
+feature_mining.egg-info/*
 dist/*
 
 # venv

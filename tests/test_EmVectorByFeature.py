@@ -2,15 +2,33 @@
 
 from unittest import TestCase
 from feature_mining.em_vector_by_feature import EmVectorByFeature
-import numpy as np
-from scipy.sparse import csr_matrix
+import os
 
 
-class TestExpectationMaximizationVector(TestCase):
+class TestEmVectorByFeature(TestCase):
+    def __init__(self, *args, **kwargs):
+        super(TestEmVectorByFeature, self).__init__(*args, **kwargs)
 
-    def test_initalization(self):
-        em = em = EmVectorByFeature()
-        print("testing")
+    def setUp(self):
+        """
+        Special test method: setUp
+        Will be executed before tests.
+        :return: none
+        """
+        print("CWD: ", os.getcwd())
+        if 'tests' in os.getcwd():
+            self.dump_path = "./data/em_01/"
+        else:
+            self.dump_path = "./tests/data/em_01/"
+
+        em = EmVectorByFeature()
+
+    def tearDown(self):
+        """
+        Special test method: tearDown()
+        Used to clean up tests and configuration, if needed, after test execution.
+        :return: none
+        """
 
     def test_e_step(self):
 

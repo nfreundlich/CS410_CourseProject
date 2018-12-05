@@ -17,7 +17,6 @@ class TestExpectationMaximizationVector(TestCase):
         else:
             self.dump_path = "./tests/data/em_01/"
 
-
     def test_e_step_hp_01(self):
         em = ExpectationMaximizationVector(dump_path=self.dump_path)
         em.em()

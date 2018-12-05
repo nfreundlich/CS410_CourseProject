@@ -5,6 +5,7 @@ from feature_mining import parse_and_model
 from feature_mining import ParseAndModel
 from datetime import datetime
 import os
+import logging
 
 
 class EmVectorByFeature(ExpectationMaximization):
@@ -63,7 +64,7 @@ class EmVectorByFeature(ExpectationMaximization):
 
         print(os.getcwd())
 
-        pm_inst = ParseAndModel(feature_list=["sound", "battery", ["screen", "display"]], filename='demo_files/iPod.final', nlines=5)
+        pm_inst = ParseAndModel(feature_list=["sound", "battery", ["screen", "display"]], filename='../tests/data/parse_and_model/iPod.final', nlines=5)
 
         print("formatting feature list")
         #feature_list = pm_inst.format_feature_list(feature_list=["sound", "battery", ["screen", "display"]])
@@ -88,9 +89,10 @@ class EmVectorByFeature(ExpectationMaximization):
         # self.topic_model = em_input["model_feature_matrix"].toarray() # TODO remove toarray after fixing parse and model
         # self.background_probability = em_input["model_background_matrix"]
         self.reviews_matrix = pm_inst.model_results["section_word_counts_matrix"]
-        self.topic_model = pm_inst.model_results["model_feature_matrix"].toarray() # TODO remove toarray after fixing parse and model
+        self.topic_model = pm_inst.model_results["model_feature_matrix"]
         self.background_probability = pm_inst.model_results["model_background_matrix"]
 
+        print('Topic model shape: ', self.topic_model.shape)
 
     def import_data_temporary(self):
         """

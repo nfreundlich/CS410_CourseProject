@@ -1,3 +1,4 @@
+name = "gflm"
 from .em_base import ExpectationMaximization
 from .em_original import ExpectationMaximizationOriginal
 from .em_vector import ExpectationMaximizationVector

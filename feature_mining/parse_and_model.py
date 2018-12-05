@@ -11,7 +11,7 @@ import math
 import logging
 from datetime import datetime
 import time
-
+import os
 
 class ParseAndModel:
     """
@@ -24,6 +24,7 @@ class ParseAndModel:
         """
         Constructor
         """
+        # TODO: [nfr] To check whether the entire workflow should be in the constructor. Ok for now.
 
         # Run feature list formatter and save output (or notify user this is being skipped)
         self.feature_list = feature_list
@@ -102,6 +103,7 @@ class ParseAndModel:
         feature_df = pd.DataFrame(formatted_feature_list)
 
         # Save formatted feture list to object
+        # TODO: [nfr] remove this from here, return feature_df and make assignment in __init__
         self.formatted_feature_list=feature_df
         #return feature_df
 
@@ -215,6 +217,7 @@ class ParseAndModel:
                         break
 
         # Bundle and save data set
+        # TODO: [nfr] remove this from here, return dictionary and make assignment in __init__
         self.parsed_text = dict(section_list=pd.DataFrame(section_list), feature_mapping=pd.DataFrame(feature_section_mapping),
                     feature_list=feature_list)
 
@@ -454,7 +457,7 @@ class ParseAndModel:
                 key: word id used in models, matrices, etc.
                 value: actual word
         """
-
+        logging.warning(" Building explicit models")
         text_set = self.parsed_text["section_list"]
         feature_set = self.formatted_feature_list
 
@@ -621,6 +624,7 @@ class ParseAndModel:
         vocabulary_lookup = {v: k for k, v in vocabulary.items()}
 
         # Save model results to object
+        # TODO: [nfr] remove this from here, return feature_df and make assignment in __init__
         self.model_results = dict(model_background=model_background, model_feature=model_feature,
                              section_word_counts_matrix=csr_matrix(section_word_counts_matrix),
                              model_background_matrix=model_background_matrix, model_feature_matrix=model_feature_matrix,
@@ -735,18 +739,21 @@ class ParseAndModel:
 
 
 if __name__ == '__main__':
+    print("CWD:", os.getcwd())
     start_time = time.time()
 
     pm = ParseAndModel()
 
+
+    # TODO: [nfr] Document this workflow
     print("formatting feature list")
     pm.feature_list = ["sound", "battery", ["screen", "display"]]
     pm.format_feature_list()
     #feature_list = ParseAndModel.format_feature_list(feature_list=["sound", "battery", ["screen", "display"]])
 
     print("reading annotated data")
-    pm.read_annotated_data(filename='demo_files/iPod.final', nlines=500)
-    #annotated_data = ParseAndModel.read_annotated_data(filename='demo_files/iPod.final', nlines=500)
+    pm.read_annotated_data(filename='../tests/data/parse_and_model/iPod.final', nlines=500)
+    #annotated_data = ParseAndModel.(filename='demo_files/iPod.final', nlines=500)
 
     print("parsing text and building explicit feature models: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     pm.build_explicit_models()

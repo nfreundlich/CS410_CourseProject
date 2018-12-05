@@ -8,6 +8,7 @@ import en_core_web_sm
 from collections import Counter
 from collections import defaultdict, OrderedDict
 import math
+import logging
 from datetime import datetime
 import time
 
@@ -18,30 +19,43 @@ class ParseAndModel:
     Based on this data, computes matrices for reviews and features.
     """
 
-    def __init__(self, feature_list: list, filename: str, nlines: int = None, remove_stopwords: bool = False
+    def __init__(self, feature_list: list = None , filename: str = None, nlines: int = None, remove_stopwords: bool = False
                  , start_line: int = 0, lemmatize_words: bool = True):
         """
         Constructor
         """
 
-        # Run feature list formatter and save output
-        self.feature_list = ParseAndModel.format_feature_list(feature_list)
+        # Run feature list formatter and save output (or notify user this is being skipped)
+        self.feature_list = feature_list
+        self.formatted_feature_list = None
+        if self.feature_list is None:
+            logging.warning(" >No feature list specified, skipping feature list formatting")
+        else:
+            ParseAndModel.format_feature_list()
 
         # TODO: make the method running here an arugment that can be one of the other file readers
-        # Run read annotated data
-        self.parsed_text = ParseAndModel.read_annotated_data(filename=filename, nlines=nlines, start_line=start_line)
+        # Run read annotated data (or notify user this is being skipped)
+        if filename is None:
+            logging.warning(" >No filename specified, skipping parse step")
+        else:
+            ParseAndModel.read_annotated_data(filename=filename, nlines=nlines, start_line=start_line)
 
         # Build the explicit models and store the output
-        self.explicit_models = ParseAndModel.build_explicit_models(text_set=self.parsed_text["section_list"],
+        if self.formatted_feature_list is None:
+            logging.warning(" >No formatted feature list present, can't build explicit models")
+        elif self.parsed_text is None:
+            logging.warning(" >No parsed text present, can't build explicit models")
+        else:
+            self.explicit_models = ParseAndModel.build_explicit_models(text_set=self.parsed_text["section_list"],
                                                           feature_set=self.feature_list,
                                                           remove_stopwords=remove_stopwords,
                                                           lemmatize_words=lemmatize_words)
 
-        self.parsed_text2 = ParseAndModel.read_file_data(filename=filename, nlines=nlines, start_line=start_line)
+        # self.parsed_text2 = ParseAndModel.read_file_data(filename=filename, nlines=nlines, start_line=start_line)
 
 
     # TODO: add tests
-    def format_feature_list(feature_list: list) -> pd.DataFrame:
+    def format_feature_list(self):
         """
         This function takes a list of strings and/or lists of strings and converts them to a DataFrame with ids. Terms in
         nested lists will be treated as synonyms and given the same feature id
@@ -58,6 +72,7 @@ class ParseAndModel:
         feature_term_id: integer id for the feature, will be unique for each string, including synonyms
 
         """
+        feature_list=self.feature_list
 
         feature_index = 0
         feature_term_index = 0
@@ -88,10 +103,12 @@ class ParseAndModel:
 
         feature_df = pd.DataFrame(formatted_feature_list)
 
-        return feature_df
+        # Save formatted feture list to object
+        self.formatted_feature_list=feature_df
+        #return feature_df
 
     # TODO: add tests, alterate file formats
-    def read_annotated_data(filename: str, nlines: int = None, start_line: int = 0) -> dict:
+    def read_annotated_data(self, filename: str, nlines: int = None, start_line: int = 0):
         """
         Reads in Santu's annotated files and records the explicit features and implicit features annotated in the file
 
@@ -199,8 +216,8 @@ class ParseAndModel:
                     if section_id >= nlines:
                         break
 
-        # Bundle and return data set
-        return dict(section_list=pd.DataFrame(section_list), feature_mapping=pd.DataFrame(feature_section_mapping),
+        # Bundle and save data set
+        self.parsed_text = dict(section_list=pd.DataFrame(section_list), feature_mapping=pd.DataFrame(feature_section_mapping),
                     feature_list=feature_list)
 
         # TODO: add tests, alterate file formats
@@ -391,7 +408,7 @@ class ParseAndModel:
 
 
     # TODO: Slow, needs to be optimized, unit tests need to be added
-    def build_explicit_models(text_set: pd.DataFrame, feature_set: pd.DataFrame, remove_stopwords: bool = False,
+    def build_explicit_models(self, remove_stopwords: bool = False,
                               lemmatize_words: bool = True) -> dict:
         """
         This function builds a background model, set of topic models and summarizes the counts of words in each sentence
@@ -439,6 +456,10 @@ class ParseAndModel:
                 key: word id used in models, matrices, etc.
                 value: actual word
         """
+
+        text_set = self.parsed_text["section_list"]
+        feature_set = self.formatted_feature_list
+
         section_word_list = dict()  # list of all words in each section
         section_word_counts = dict()  # count of words in each section
         collection_word_counts = Counter()  # count of all words in all section
@@ -601,12 +622,12 @@ class ParseAndModel:
         # reverse vocabulary dictionary so it can be used to back-translate later
         vocabulary_lookup = {v: k for k, v in vocabulary.items()}
 
-        model_results = dict(model_background=model_background, model_feature=model_feature,
+        # Save model results to object
+        self.model_results = dict(model_background=model_background, model_feature=model_feature,
                              section_word_counts_matrix=csr_matrix(section_word_counts_matrix),
                              model_background_matrix=model_background_matrix, model_feature_matrix=model_feature_matrix,
                              vocabulary_lookup=vocabulary_lookup)
 
-        return model_results
 
     # TODO: Try metapy impelementation (should mostly be a swap of the NLP call)
     def build_explicit_models_metapy(text_set: pd.DataFrame, feature_set: pd.DataFrame,
@@ -718,16 +739,20 @@ class ParseAndModel:
 if __name__ == '__main__':
     start_time = time.time()
 
-    # pm = ParseModel()
+    pm = ParseAndModel()
 
     print("formatting feature list")
-    feature_list = ParseAndModel.format_feature_list(feature_list=["sound", "battery", ["screen", "display"]])
+    pm.feature_list = ["sound", "battery", ["screen", "display"]]
+    pm.format_feature_list()
+    #feature_list = ParseAndModel.format_feature_list(feature_list=["sound", "battery", ["screen", "display"]])
 
     print("reading annotated data")
-    annotated_data = ParseAndModel.read_annotated_data(filename='demo_files/iPod.final', nlines=500)
+    pm.read_annotated_data(filename='demo_files/iPod.final', nlines=500)
+    #annotated_data = ParseAndModel.read_annotated_data(filename='demo_files/iPod.final', nlines=500)
 
     print("parsing text and building explicit feature models: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-    em_input = ParseAndModel.build_explicit_models(text_set=annotated_data["section_list"], feature_set=feature_list)
+    pm.build_explicit_models()
+    #em_input = pm.build_explicit_models(text_set=annotated_data["section_list"], feature_set=feature_list)
     print("parsing text and building explicit feature models: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
     end_time = time.time()

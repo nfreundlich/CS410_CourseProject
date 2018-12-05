@@ -64,6 +64,10 @@ class ExpectationMaximization:
         """
         print(type(self).__name__, "- base loop...")
         while self.max_iter:
+            print(60*'-')
+            print(20 * '-', "Running Iteration:", self.max_iter, 20 * '-')
+            print(60 * '-')
+
             start_time_iteration = time.time()
             self.max_iter -= 1
             self.e_step()
@@ -71,7 +75,10 @@ class ExpectationMaximization:
             end_time_iteration = time.time()
             print("Elapsed on iteration: {} seconds".format(round(end_time_iteration - start_time_iteration, 4)))
             if self.compute_cost() < self.dist_threshold:
+                print("Under change threshold, terminating")
                 break
+            if self.max_iter==0:
+                print("Maximum iterations reached")
 
     def e_step(self):
         print(type(self).__name__, "- base e_step...")

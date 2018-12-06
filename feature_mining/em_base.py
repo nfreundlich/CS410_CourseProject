@@ -24,7 +24,7 @@ class ExpectationMaximization:
         # Parameters for EM execution control
         self.max_iter = 50
         self.lambda_background = 0.7
-        self.dist_threshold = 1e-6
+        self.delta_threshold = 1e-6
 
         # Parameters related to collection size
         self.m = 0
@@ -74,7 +74,7 @@ class ExpectationMaximization:
             self.m_step()
             end_time_iteration = time.time()
             print("Elapsed on iteration: {} seconds".format(round(end_time_iteration - start_time_iteration, 4)))
-            if self.compute_cost() < self.dist_threshold:
+            if self.compute_cost() < self.delta_threshold:
                 print("Under change threshold, terminating")
                 break
             if self.max_iter==0:

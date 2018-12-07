@@ -5,15 +5,22 @@ from feature_mining import parse_and_model
 from feature_mining import ParseAndModel
 from datetime import datetime
 import os
+import logging
+
 
 class EmVectorByFeature(ExpectationMaximization):
     """
     Vectorized implementation of EM algorithm.
     """
 
-    def __init__(self, dump_path="../tests/data/em_01/"):
+    def __init__(self, dump_path="../tests/data/em_01/", explicit_model: ParseAndModel=None, lambda_background: float=0.7, max_iter: int=50, delta_threshold: float=1e-6):
         print(type(self).__name__, '- init...')
         ExpectationMaximization.__init__(self, dump_path=dump_path)
+
+        # User set parameters
+        self.max_iter = max_iter
+        self.lambda_background = lambda_background
+        self.delta_threshold = delta_threshold
 
         # Parameters for matrix result interpretation
         self.features_map = {}
@@ -36,7 +43,26 @@ class EmVectorByFeature(ExpectationMaximization):
         self.nom = 0.0
         self.m_sum = None
 
-    def import_data(self):
+        # if explicit model exists initialize class variables, else skip
+        if explicit_model is not None:
+            self.explicit_model=explicit_model
+
+            # Parameters related to collection size
+            self.m = explicit_model.model_results["section_word_counts_matrix"].shape[0]
+            self.v = explicit_model.model_results["section_word_counts_matrix"].shape[1]
+            self.f = explicit_model.model_results["model_feature_matrix"].shape[1]
+
+            # Parameters computed from collection
+            self.reviews_matrix = explicit_model.model_results["section_word_counts_matrix"]
+            self.topic_model = explicit_model.model_results["model_feature_matrix"]
+            self.background_probability = explicit_model.model_results["model_background_matrix"]
+
+            logging.info("Explicit models have been imported into EM")
+
+        else:
+            logging.warning("Parse and model output was not included as an argument and will need to be set manually")
+
+    def import_data(self, explicit_model: ParseAndModel=None):
         """
         Needed data structures could be further transformed here.
 
@@ -56,40 +82,18 @@ class EmVectorByFeature(ExpectationMaximization):
             - self.background_probability = background_probability_vector
         :return:
         """
-        print(type(self).__name__, '- import data...')
+        self.explicit_model = explicit_model
 
-        # TODO: determine how best to pass in necessary arguments
-
-        print(os.getcwd())
-
-        pm_inst = ParseAndModel(feature_list=["sound", "battery", ["screen", "display"]], filename='demo_files/iPod.final', nlines=5)
-
-        print("formatting feature list")
-        #feature_list = pm_inst.format_feature_list(feature_list=["sound", "battery", ["screen", "display"]])
-
-        print("reading annotated data")
-        #annotated_data = pm_inst.read_annotated_data(filename='demo_files/iPod.final', nlines=None)
-
-        print("parsing text and building explicit feature models: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-        #em_input = pm_inst.build_explicit_models(text_set=annotated_data["section_list"], feature_set=feature_list)
-        print("parsing text and building explicit feature models: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-
-        # Parameters related to collection size
-        # self.m = em_input["section_word_counts_matrix"].shape[0]
-        # self.v = em_input["section_word_counts_matrix"].shape[1]
-        # self.f = em_input["model_feature_matrix"].shape[1]
-        self.m = pm_inst.model_results["section_word_counts_matrix"].shape[0]
-        self.v = pm_inst.model_results["section_word_counts_matrix"].shape[1]
-        self.f = pm_inst.model_results["model_feature_matrix"].shape[1]
+        self.m = explicit_model.model_results["section_word_counts_matrix"].shape[0]
+        self.v = explicit_model.model_results["section_word_counts_matrix"].shape[1]
+        self.f = explicit_model.model_results["model_feature_matrix"].shape[1]
 
         # Parameters computed from collection
-        # self.reviews_matrix = em_input["section_word_counts_matrix"]
-        # self.topic_model = em_input["model_feature_matrix"].toarray() # TODO remove toarray after fixing parse and model
-        # self.background_probability = em_input["model_background_matrix"]
-        self.reviews_matrix = pm_inst.model_results["section_word_counts_matrix"]
-        self.topic_model = pm_inst.model_results["model_feature_matrix"].toarray() # TODO remove toarray after fixing parse and model
-        self.background_probability = pm_inst.model_results["model_background_matrix"]
+        self.reviews_matrix = explicit_model.model_results["section_word_counts_matrix"]
+        self.topic_model = explicit_model.model_results["model_feature_matrix"]
+        self.background_probability = explicit_model.model_results["model_background_matrix"]
 
+        logging.info("Explicit model has been imported - algorithm can be started")
 
     def import_data_temporary(self):
         """
@@ -206,8 +210,8 @@ class EmVectorByFeature(ExpectationMaximization):
         self.reviews_binary = self.reviews_matrix.sign()
 
         # Compute sparse matrix
-        self.reviews_matrix = csr_matrix(self.reviews_matrix)
-        self.reviews_binary = csr_matrix(self.reviews_binary)
+        #self.reviews_matrix = csr_matrix(self.reviews_matrix)
+        #self.reviews_binary = csr_matrix(self.reviews_binary)
 
         # Initialize hidden_parameters
         self.hidden_parameters = []
@@ -234,7 +238,7 @@ class EmVectorByFeature(ExpectationMaximization):
 
         # TODO: enable this code when ready to generate random pi-s
         if True:
-            self.pi_matrix = np.random.dirichlet(np.ones(self.m), self.f).transpose()
+            self.pi_matrix = np.random.dirichlet(np.ones(self.f), self.m)
 
     def e_step(self):
         """
@@ -311,8 +315,6 @@ class EmVectorByFeature(ExpectationMaximization):
         pi_sums = np.where(pi_sums == 0, 1, pi_sums)
 
         self.pi_matrix = np.multiply(self.pi_matrix, np.power(pi_sums, -1))
-
-
 
     def compute_cost(self):
         print(type(self).__name__, '- compute cost...')

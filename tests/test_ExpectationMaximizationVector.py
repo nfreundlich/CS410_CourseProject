@@ -7,6 +7,10 @@ import os
 
 
 class TestExpectationMaximizationVector(TestCase):
+    """
+    Tests for the initial implementation of the vectorized solution.
+    These can be skipped after migration is confirmed.
+    """
     def __init__(self, *args, **kwargs):
         super(TestExpectationMaximizationVector, self).__init__(*args, **kwargs)
 

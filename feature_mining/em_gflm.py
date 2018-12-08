@@ -46,7 +46,7 @@ class GFLM:
     def calc_gflm_word(self, word_threshold:float = None):
         """
         Compute GFLM word.
-        :param word_threshold: threshold
+        :param word_threshold: threshold to be used for gflm word
         :return: TBD
         """
         if word_threshold is None:
@@ -75,7 +75,7 @@ class GFLM:
     def calc_gflm_section(self, section_threshold:float = None):
         """
         Compute GFLM considering threshold at sentence.
-        :param section_threshold:
+        :param section_threshold: threshold to be used for gflm section
         :return:
         """
 

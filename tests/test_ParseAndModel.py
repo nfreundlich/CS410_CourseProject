@@ -11,9 +11,11 @@ import os
 import string
 import math
 
+
 def strip_punctuation(s):
     new_s = ''.join(c for c in s if c not in string.punctuation)
     return new_s.strip()
+
 
 class TestParseAndModel(TestCase):
 
@@ -26,7 +28,6 @@ class TestParseAndModel(TestCase):
                            ["display", 3, 3]], columns=["feature", "feature_id", "feature_term_id"])
 
         pm.formatted_feature_list = feature_list = ["sound", "battery", "screen", "display"]
-
 
         pm.feature_list = feature_list
         pm.formatted_feature_list = pm.format_feature_list()
@@ -64,7 +65,6 @@ class TestParseAndModel(TestCase):
 
         self.assertEqual(True, pd.DataFrame.equals(df_section_list, pm.parsed_text["section_list"]))
         self.assertEqual(True, pd.DataFrame.equals(df_feature_mapping, pm.parsed_text["feature_mapping"]))
-        # self.assertEqual(0, ((df_feature_list > oneLine["feature_list"]) - (df_feature_list < oneLine["feature_list"])))
 
     def test_read_annotated_dat_one_feature_implicit(self):
         pm = ParseAndModel()
@@ -76,11 +76,10 @@ class TestParseAndModel(TestCase):
         df_feature_list = defaultdict(int)
 
         pm.parsed_text = pm.read_annotated_data(filename='data/parse_and_model/iPod.final', nlines=1,
-                                                      start_line=6)
+                                                start_line=6)
 
         self.assertEqual(True, pd.DataFrame.equals(df_section_list, pm.parsed_text["section_list"]))
         self.assertEqual(True, pd.DataFrame.equals(df_feature_mapping, pm.parsed_text["feature_mapping"]))
-        # self.assertEqual(0, ((df_feature_list > one_line["feature_list"]) - (df_feature_list < one_line["feature_list"])))
 
     def test_read_annotated_dat_one_feature_explicit(self):
         pm = ParseAndModel()
@@ -93,7 +92,7 @@ class TestParseAndModel(TestCase):
         df_feature_list["battery"] = 1
 
         pm.parsed_text = pm.read_annotated_data(filename='data/parse_and_model/iPod.final', nlines=1,
-                                                      start_line=13)
+                                                start_line=13)
 
         self.assertEqual(True, pd.DataFrame.equals(df_section_list, pm.parsed_text["section_list"]))
         self.assertEqual(True, pd.DataFrame.equals(df_feature_mapping, pm.parsed_text["feature_mapping"]))
@@ -112,7 +111,7 @@ class TestParseAndModel(TestCase):
         df_feature_list["size"] = 1
 
         pm.parsed_text = pm.read_annotated_data(filename='data/parse_and_model/iPod.final', nlines=1,
-                                                      start_line=622)
+                                                start_line=622)
 
         self.assertEqual(True, pd.DataFrame.equals(df_section_list, pm.parsed_text["section_list"]))
         self.assertEqual(True, pd.DataFrame.equals(df_feature_mapping, pm.parsed_text["feature_mapping"]))
@@ -131,7 +130,8 @@ class TestParseAndModel(TestCase):
                                            , [1, 5,
                                               "she absolutely loves it! the sound quality is excellent!! the different colors make a nice option as well",
                                               False]
-                                           , [1, 6, "i originally picked a silver one, because that is all the store had",
+                                           ,
+                                        [1, 6, "i originally picked a silver one, because that is all the store had",
                                          False]
                                            , [1, 7, "i then checked amazon", False]
                                            , [1, 8, "com that not only had it in pink(the color my daughter wanted), [",
@@ -148,7 +148,7 @@ class TestParseAndModel(TestCase):
         df_feature_list["sound"] = 2
 
         pm.parsed_text = pm.read_annotated_data(filename='data/parse_and_model/iPod.final', nlines=10,
-                                                      start_line=660)
+                                                start_line=660)
 
         self.assertEqual(True, pd.DataFrame.equals(df_section_list, pm.parsed_text["section_list"]))
         self.assertEqual(True, pd.DataFrame.equals(df_feature_mapping, pm.parsed_text["feature_mapping"]))
@@ -158,61 +158,66 @@ class TestParseAndModel(TestCase):
         pm = ParseAndModel()
 
         section_list = pd.DataFrame([[0, 0, "large clear screen", True]
-                                        ], columns=["doc_id", "section_id", "section_text", "title"])
+                                     ], columns=["doc_id", "section_id", "section_text", "title"])
 
         pm.feature_list = ["screen"]
-        pm.formatted_feature_list =  pm.format_feature_list()
+        pm.formatted_feature_list = pm.format_feature_list()
 
-        pm.parsed_text =  dict(section_list= section_list)
+        pm.parsed_text = dict(section_list=section_list)
         pm.model_results = pm.build_explicit_models(log_base=2)
 
-        expected_model_background=[1/3, 1/3, 1/3]
-        expected_model_feature=[[1/3, 1/3, 1/3]]
-        expected_section_word_counts={0:Counter({"large": 1, "clear": 1, "screen":1})}
-        expected_section_word_counts_matrix=[[1,1,1]]
-        expected_model_background_matrix=np.array([1/3, 1/3, 1/3])
+        expected_model_background = [1 / 3, 1 / 3, 1 / 3]
+        expected_model_feature = [[1 / 3, 1 / 3, 1 / 3]]
+        expected_section_word_counts = {0: Counter({"large": 1, "clear": 1, "screen": 1})}
+        expected_section_word_counts_matrix = [[1, 1, 1]]
+        expected_model_background_matrix = np.array([1 / 3, 1 / 3, 1 / 3])
         expected_model_feature_matrix = np.array([[1 / 3], [1 / 3], [1 / 3]])
-        expected_vocab_lookup={0: 'large', 1: 'clear', 2: 'screen'}
+        expected_vocab_lookup = {0: 'large', 1: 'clear', 2: 'screen'}
 
-        self.assertEqual(True, expected_model_background== pm.model_results["model_background"])
+        self.assertEqual(True, expected_model_background == pm.model_results["model_background"])
         self.assertEqual(True, expected_model_feature == pm.model_results["model_feature"])
-        #self.assertEqual(True, expected_section_word_counts == em_input["section_word_counts"])
-        self.assertEqual(True, np.array_equiv(expected_section_word_counts_matrix, csr_matrix.toarray(pm.model_results["section_word_counts_matrix"])))
-        self.assertEqual(True, np.array_equiv(expected_model_background_matrix,csr_matrix.toarray(pm.model_results["model_background_matrix"])))
+        # self.assertEqual(True, expected_section_word_counts == em_input["section_word_counts"])
+        self.assertEqual(True, np.array_equiv(expected_section_word_counts_matrix,
+                                              csr_matrix.toarray(pm.model_results["section_word_counts_matrix"])))
+        self.assertEqual(True, np.array_equiv(expected_model_background_matrix,
+                                              csr_matrix.toarray(pm.model_results["model_background_matrix"])))
         self.assertEqual(True, np.array_equiv(expected_model_feature_matrix, pm.model_results["model_feature_matrix"]))
         self.assertEqual(True, expected_vocab_lookup == pm.model_results["vocabulary_lookup"])
-
 
     def test_bem_two_section(self):
         pm = ParseAndModel()
 
         section_list = pd.DataFrame([[0, 0, "large clear screen", True]
                                         , [0, 1, "large broken bad", True]
-                                        ], columns=["doc_id", "section_id", "section_text", "title"])
+                                     ], columns=["doc_id", "section_id", "section_text", "title"])
 
         pm.feature_list = ["screen"]
         pm.formatted_feature_list = pm.format_feature_list()
 
         pm.parsed_text = dict(section_list=section_list)
-        pm.model_results = pm.build_explicit_models(lemmatize_words=False,log_base=2)
+        pm.model_results = pm.build_explicit_models(lemmatize_words=False, log_base=2)
 
         expected_model_background = [1 / 3, 1 / 6, 1 / 6, 1 / 6, 1 / 6]
         expected_model_feature = [[0.218, 0.282, 0.282, 0.109, 0.109]]
         expected_section_word_counts = {0: Counter({"large": 1, "clear": 1, "screen": 1})
-                                        ,1: Counter({"large": 1, "broken":1, "bad":1})}
+            , 1: Counter({"large": 1, "broken": 1, "bad": 1})}
         expected_section_word_counts_matrix = [[1, 1, 1, 0, 0]
-                                              ,[1, 0, 0, 1, 1]]
+            , [1, 0, 0, 1, 1]]
         expected_model_background_matrix = np.array([1 / 3, 1 / 6, 1 / 6, 1 / 6, 1 / 6])
         expected_model_feature_matrix = np.array([[0.218], [0.282], [0.282], [0.109], [0.109]])
-        expected_vocab_lookup = {0: 'large', 1: 'clear', 2: 'screen', 3: 'broken', 4:'bad'}
+        expected_vocab_lookup = {0: 'large', 1: 'clear', 2: 'screen', 3: 'broken', 4: 'bad'}
 
         self.assertEqual(True, expected_model_background == pm.model_results["model_background"])
-        self.assertEqual(True, expected_model_feature == [[round(val, 3) for val in feature_model] for feature_model in pm.model_results["model_feature"]])
-        #self.assertEqual(True, expected_section_word_counts == em_input["section_word_counts"])
+        self.assertEqual(True, expected_model_feature == [[round(val, 3) for val in feature_model] for feature_model in
+                                                          pm.model_results["model_feature"]])
+        # self.assertEqual(True, expected_section_word_counts == em_input["section_word_counts"])
         self.assertEqual(True,
-                         np.array_equiv(expected_section_word_counts_matrix, csr_matrix.toarray(pm.model_results["section_word_counts_matrix"])))
-        self.assertEqual(True, np.array_equiv(expected_model_background_matrix, csr_matrix.toarray(pm.model_results["model_background_matrix"])))
-        self.assertEqual(True, np.array_equiv(expected_model_feature_matrix, np.round(pm.model_results["model_feature_matrix"],3)))
+                         np.array_equiv(expected_section_word_counts_matrix,
+                                        csr_matrix.toarray(pm.model_results["section_word_counts_matrix"])))
+        self.assertEqual(True, np.array_equiv(expected_model_background_matrix,
+                                              csr_matrix.toarray(pm.model_results["model_background_matrix"])))
+        self.assertEqual(True, np.array_equiv(expected_model_feature_matrix,
+                                              np.round(pm.model_results["model_feature_matrix"], 3)))
         self.assertEqual(True, expected_vocab_lookup == pm.model_results["vocabulary_lookup"])
 
     def test_constructor_one_section(self):
@@ -220,36 +225,39 @@ class TestParseAndModel(TestCase):
                            lemmatize_words=False, nlines=1)
 
         section_list = pd.DataFrame([[0, 0, "large clear screen", True]
-                                        ], columns=["doc_id", "section_id", "section_text", "title"])
+                                     ], columns=["doc_id", "section_id", "section_text", "title"])
 
-        expected_model_background=[1/3, 1/3, 1/3]
-        expected_model_feature=[[1/3, 1/3, 1/3]]
-        expected_section_word_counts={0:Counter({"large": 1, "clear": 1, "screen":1})}
-        expected_section_word_counts_matrix=[[1,1,1]]
-        expected_model_background_matrix=np.array([1/3, 1/3, 1/3])
+        expected_model_background = [1 / 3, 1 / 3, 1 / 3]
+        expected_model_feature = [[1 / 3, 1 / 3, 1 / 3]]
+        expected_section_word_counts = {0: Counter({"large": 1, "clear": 1, "screen": 1})}
+        expected_section_word_counts_matrix = [[1, 1, 1]]
+        expected_model_background_matrix = np.array([1 / 3, 1 / 3, 1 / 3])
         expected_model_feature_matrix = np.array([[1 / 3], [1 / 3], [1 / 3]])
-        expected_vocab_lookup={0: 'large', 1: 'clear', 2: 'screen'}
+        expected_vocab_lookup = {0: 'large', 1: 'clear', 2: 'screen'}
 
-        self.assertEqual(True, expected_model_background== pm.model_results["model_background"])
+        self.assertEqual(True, expected_model_background == pm.model_results["model_background"])
         self.assertEqual(True, expected_model_feature == pm.model_results["model_feature"])
-        #self.assertEqual(True, expected_section_word_counts == em_input["section_word_counts"])
-        self.assertEqual(True, np.array_equiv(expected_section_word_counts_matrix, csr_matrix.toarray(pm.model_results["section_word_counts_matrix"])))
-        self.assertEqual(True, np.array_equiv(expected_model_background_matrix,csr_matrix.toarray(pm.model_results["model_background_matrix"])))
+        # self.assertEqual(True, expected_section_word_counts == em_input["section_word_counts"])
+        self.assertEqual(True, np.array_equiv(expected_section_word_counts_matrix,
+                                              csr_matrix.toarray(pm.model_results["section_word_counts_matrix"])))
+        self.assertEqual(True, np.array_equiv(expected_model_background_matrix,
+                                              csr_matrix.toarray(pm.model_results["model_background_matrix"])))
         self.assertEqual(True, np.array_equiv(expected_model_feature_matrix, pm.model_results["model_feature_matrix"]))
         self.assertEqual(True, expected_vocab_lookup == pm.model_results["vocabulary_lookup"])
 
     def test_constructor_two_section(self):
-        pm = ParseAndModel(feature_list=["screen"], filename='data/parse_and_model/twoLineTest.txt', lemmatize_words=False, log_base=2)
+        pm = ParseAndModel(feature_list=["screen"], filename='data/parse_and_model/twoLineTest.txt',
+                           lemmatize_words=False, log_base=2)
 
         section_list = pd.DataFrame([[0, 0, "large clear screen", True]
                                         , [0, 1, "large broken bad", True]
                                      ], columns=["doc_id", "section_id", "section_text", "title"])
 
-        #pm.feature_list = ["screen"]
-        #pm.format_feature_list()
+        # pm.feature_list = ["screen"]
+        # pm.format_feature_list()
 
-        #pm.parsed_text = dict(section_list=section_list)
-        #pm.build_explicit_models(lemmatize_words=False)
+        # pm.parsed_text = dict(section_list=section_list)
+        # pm.build_explicit_models(lemmatize_words=False)
 
         expected_model_background = [1 / 3, 1 / 6, 1 / 6, 1 / 6, 1 / 6]
         expected_model_feature = [[0.218, 0.282, 0.282, 0.109, 0.109]]
@@ -294,8 +302,8 @@ class TestParseAndModel(TestCase):
         background_model = pickle.load(infile)
         infile.close()
 
-        pm = ParseAndModel(feature_list=["sound", "battery"], filename='data/parse_and_model/iPod.final', lemmatize_words=False, log_base=None, start_line=4, nlines=11, include_title_lines=False)
-
+        pm = ParseAndModel(feature_list=["sound", "battery"], filename='data/parse_and_model/iPod.final',
+                           lemmatize_words=False, log_base=None, start_line=4, nlines=11, include_title_lines=False)
 
         # check section word counts
         pm_section_word_counts = pm.model_results["section_word_counts_matrix"].toarray()
@@ -306,7 +314,7 @@ class TestParseAndModel(TestCase):
             review_sections = review_sections[review_sections.doc_id == review_id]
             section_og_id = 0
             for section_index, section_row in review_sections.iterrows():
-                print("SWC - Checking section:" +str(section_row["section_id"]))
+                print("SWC - Checking section:" + str(section_row["section_id"]))
                 for word in section_word_counts[review_id][section_og_id].keys():
                     word = strip_punctuation(word)
                     if word == '':
@@ -315,9 +323,11 @@ class TestParseAndModel(TestCase):
                     actual_count = pm_section_word_counts[section_row["section_id"], vocab_word_id]
                     original_count = section_word_counts[review_id][section_og_id][word]
 
-                    self.assertEqual(actual_count, original_count, msg="SWC - section_id: " + str(section_row["section_id"]) + ", " + word + " a=" + str(actual_count) + ", e=" + str(original_count))
+                    self.assertEqual(actual_count, original_count, msg="SWC - section_id: " + str(
+                        section_row["section_id"]) + ", " + word + " a=" + str(actual_count) + ", e=" + str(
+                        original_count))
 
-                section_og_id+=1
+                section_og_id += 1
 
         # check background model
         for word in background_model.keys():
@@ -332,7 +342,6 @@ class TestParseAndModel(TestCase):
                              msg="Background prob:" + word + " a=" + str(
                                  actual_prob) + ", e=" + str(original_prob))
 
-
         # check topic model
         for f_index, feature_row in pm.formatted_feature_list.iterrows():
             for word_index, word in pm.model_results["vocabulary_lookup"].items():
@@ -343,15 +352,16 @@ class TestParseAndModel(TestCase):
                 actual_prob = pm.model_results["model_feature"][feature_index][word_index]
                 original_prob = topic_model[feature_row["feature"]][word]
 
-                self.assertEqual(round(actual_prob,8), round(original_prob,8),
-                                 msg="topic - feature_id: " + str(feature_row["feature_id"]) + ", word=" + word + ", a=" + str(
+                self.assertEqual(round(actual_prob, 8), round(original_prob, 8),
+                                 msg="topic - feature_id: " + str(
+                                     feature_row["feature_id"]) + ", word=" + word + ", a=" + str(
                                      actual_prob) + ", e=" + str(original_prob))
 
 
 # added for exploratory testing
 if __name__ == '__main__':
-    #pm = ParseAndModel()
+    # pm = ParseAndModel()
 
     # format_feature_list, read_annotated_data, build_explicit_models
-    feature_list = ParseAndModel.format_feature_list(feature_list=["sound", "battery", ["screen", "display"]])
+    #feature_list = ParseAndModel.format_feature_list(feature_list=["sound", "battery", ["screen", "display"]])
     pass

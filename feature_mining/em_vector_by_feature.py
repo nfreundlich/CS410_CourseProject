@@ -1,18 +1,19 @@
 import numpy as np
 from scipy.sparse import csr_matrix
 from feature_mining.em_base import ExpectationMaximization
-from feature_mining import parse_and_model
 from feature_mining import ParseAndModel
 from datetime import datetime
 import os
 import logging
+
 
 class EmVectorByFeature(ExpectationMaximization):
     """
     Vectorized implementation of EM algorithm.
     """
 
-    def __init__(self, dump_path="../tests/data/em_01/", explicit_model: ParseAndModel=None, lambda_background: float=0.7, max_iter: int=50, delta_threshold: float=1e-6):
+    def __init__(self, dump_path="../tests/data/em_01/", explicit_model: ParseAndModel = None,
+                 lambda_background: float = 0.7, max_iter: int = 50, delta_threshold: float = 1e-6):
         print(type(self).__name__, '- init...')
         ExpectationMaximization.__init__(self, dump_path=dump_path)
 
@@ -42,14 +43,16 @@ class EmVectorByFeature(ExpectationMaximization):
         self.nom = 0.0
         self.m_sum = None
 
+        self.hidden_parameters_background_estep = None
+
         # if explicit model exists initialize class variables, else skip
         if explicit_model is not None:
-            self.explicit_model=explicit_model
+            self.explicit_model = explicit_model
 
             # Parameters related to collection size
             self.m = explicit_model.model_results["section_word_counts_matrix"].shape[0]
             self.v = explicit_model.model_results["section_word_counts_matrix"].shape[1]
-            self.f = explicit_model.model_results["model_feature_matrix"].shape[1]
+            self.k = explicit_model.model_results["model_feature_matrix"].shape[1]
 
             # Parameters computed from collection
             self.reviews_matrix = explicit_model.model_results["section_word_counts_matrix"]
@@ -61,7 +64,7 @@ class EmVectorByFeature(ExpectationMaximization):
         else:
             logging.warning("Parse and model output was not included as an argument and will need to be set manually")
 
-    def import_data(self, explicit_model: ParseAndModel=None):
+    def import_data(self, explicit_model: ParseAndModel = None):
         """
         Needed data structures could be further transformed here.
 
@@ -85,7 +88,7 @@ class EmVectorByFeature(ExpectationMaximization):
 
         self.m = explicit_model.model_results["section_word_counts_matrix"].shape[0]
         self.v = explicit_model.model_results["section_word_counts_matrix"].shape[1]
-        self.f = explicit_model.model_results["model_feature_matrix"].shape[1]
+        self.k = explicit_model.model_results["model_feature_matrix"].shape[1]
 
         # Parameters computed from collection
         self.reviews_matrix = explicit_model.model_results["section_word_counts_matrix"]
@@ -119,7 +122,7 @@ class EmVectorByFeature(ExpectationMaximization):
         Want to convert the photo of Santu's data for vectorised needs.
         :return:
         """
-        m = 0   # number of sentences (lines) in all reviews - 8799
+        m = 0  # number of sentences (lines) in all reviews - 8799
         nw = 0  # number of words in vocabulary - 7266
         na = 0  # number of aspects - 9
 
@@ -133,7 +136,7 @@ class EmVectorByFeature(ExpectationMaximization):
         for feature in self.topic_model.keys():
             for word in self.topic_model[feature]:
                 words_dict[word] = True
-        nw = len(words_dict.keys()) # 7266
+        nw = len(words_dict.keys())  # 7266
         word_list = sorted(words_dict.keys())
         words_map = {}
         for word_id in range(0, len(word_list)):
@@ -186,7 +189,7 @@ class EmVectorByFeature(ExpectationMaximization):
         self.pi_matrix = pi_matrix
         self.m = m
         self.v = nw
-        self.f = na
+        self.k = na
         self.iv = np.ones(self.v).reshape(self.v, 1).T
         self.features_map = features_map
         self.words_map = words_map
@@ -209,20 +212,21 @@ class EmVectorByFeature(ExpectationMaximization):
         self.reviews_binary = self.reviews_matrix.sign()
 
         # Compute sparse matrix
-        #self.reviews_matrix = csr_matrix(self.reviews_matrix)
-        #self.reviews_binary = csr_matrix(self.reviews_binary)
+        # self.reviews_matrix = csr_matrix(self.reviews_matrix)
+        # self.reviews_binary = csr_matrix(self.reviews_binary)
 
         # Initialize hidden_parameters
         self.hidden_parameters = []
         hidden_parameters_one_feature = csr_matrix((self.m, self.v))
-        for feature in range(0, self.f):
+        for feature in range(0, self.k):
             self.hidden_parameters.append(hidden_parameters_one_feature)
 
         # Initialize hidden_parameters_background
         self.hidden_parameters_background = csr_matrix((self.m, self.v))
 
         # Calculate E-step background hidden parameter numerator - this won't change throughout the process
-        self.hidden_parameters_background_estep = self.reviews_binary.multiply(self.lambda_background).multiply(self.background_probability)
+        self.hidden_parameters_background_estep = self.reviews_binary.multiply(self.lambda_background).multiply(
+            self.background_probability)
 
         # Compute topic model for sentence as review_binary[sentence_s]^T * topic_model
         # TODO: extract this initialization in initialize_parameters and OPTIMIZE, OPTIMIZE
@@ -232,12 +236,12 @@ class EmVectorByFeature(ExpectationMaximization):
         #        self.reviews_binary[sentence].reshape(self.v, 1).multiply(self.topic_model_matrix)))
 
         # TODO disable when testing is done - currently starting with even weights
-        if False:
-            self.pi_matrix = np.full((self.m, self.f), 1/self.f)
+        # if False:
+        #    self.pi_matrix = np.full((self.m, self.f), 1/self.f)
 
         # TODO: enable this code when ready to generate random pi-s
         if True:
-            self.pi_matrix = np.random.dirichlet(np.ones(self.f), self.m)
+            self.pi_matrix = np.random.dirichlet(np.ones(self.k), self.m)
 
     def e_step(self):
         """
@@ -248,14 +252,15 @@ class EmVectorByFeature(ExpectationMaximization):
         print(type(self).__name__, '- e_step...')
 
         # TODO: after testing, change 1 to k (to treat all features)
-        for feature in range(0, self.f):  # TODO: replace with 'f' (now not needed)
+        hidden_param_sum = 0
+        for feature in range(0, self.k):  # TODO: replace with 'f' (now not needed)
             print(30 * '*', "E-Step Start feature:", feature, ' ', 30 * '*')
 
-            pi_topic = np.dot(self.pi_matrix[:,feature,np.newaxis], self.topic_model[np.newaxis, :, feature])
+            pi_topic = np.dot(self.pi_matrix[:, feature, np.newaxis], self.topic_model[np.newaxis, :, feature])
 
             self.hidden_parameters[feature] = self.reviews_binary.multiply(pi_topic)
 
-            if feature==0:
+            if feature == 0:
                 # First loop, initialze sum
                 hidden_param_sum = self.hidden_parameters[feature]
             else:
@@ -263,21 +268,21 @@ class EmVectorByFeature(ExpectationMaximization):
                 hidden_param_sum += self.hidden_parameters[feature]
 
         # Calculate denominator for background hidden parameters
-        hidden_background_denom = self.hidden_parameters_background_estep + hidden_param_sum.multiply(1-self.lambda_background)
+        hidden_background_denom = self.hidden_parameters_background_estep + hidden_param_sum.multiply(
+            1 - self.lambda_background)
 
         # Normalize hidden background parameters
-        self.hidden_parameters_background = self.hidden_parameters_background_estep.multiply(hidden_background_denom.power(-1))
+        self.hidden_parameters_background = self.hidden_parameters_background_estep.multiply(
+            hidden_background_denom.power(-1))
 
         # take element-wise sum hidden feature params ^ -1 so we can divide instead of multiplying
         hidden_param_sum = hidden_param_sum.power(-1)
 
         # Normalize hidden parameters for each feature
-        for feature in range(0, self.f):
+        for feature in range(0, self.k):
             print(30 * '*', "E-Step Start feature normalization:", feature, ' ', 30 * '*')
 
             self.hidden_parameters[feature] = self.hidden_parameters[feature].multiply(hidden_param_sum)
-
-
 
     def m_step(self):
         """
@@ -295,13 +300,14 @@ class EmVectorByFeature(ExpectationMaximization):
         multiplier = self.reviews_matrix.multiply(multiplier)
 
         # For each feature calculate numerator
-        for feature in range(0, self.f):
+        pi_sums = 0
+        for feature in range(0, self.k):
             print(30 * '*', "M-step start pi calculation:", feature, ' ', 30 * '*')
 
             new_pi = multiplier.multiply(self.hidden_parameters[feature]).sum(axis=1)
 
             # keep running total for denominator
-            if feature==0:
+            if feature == 0:
                 # if first feature initialize
                 self.pi_matrix = new_pi
                 pi_sums = new_pi
@@ -318,9 +324,9 @@ class EmVectorByFeature(ExpectationMaximization):
     def compute_cost(self):
         print(type(self).__name__, '- compute cost...')
         # TODO: fix distance formula
-        delta = np.subtract(self.pi_matrix, self.previous_pi_matrix)
+        delta = np.square(np.subtract(self.pi_matrix, self.previous_pi_matrix))
 
-        return np.max(np.positive(delta))
+        return delta.sum()
 
 
 if __name__ == '__main__':
@@ -330,62 +336,64 @@ if __name__ == '__main__':
 """
     * Notation:
             v = number of words in vocabulary
-            m  = number of sentences (lines) in all reviews
-            f = number of features
+            m  = number of sections (lines) across all documents
+            k = number of features
+            
+            Note: Python is zero indexed, but for simplicity of explanation we use 1-indexing here
     
-    * Review matrix:
-            Sentence/Word | word 1 ... ... ... ... word v
+    * Section word counts matrix (Sparse)
+            Section/Word | word 1 ... ... ... ... word v
             ---------------------------------------------------
-            Sentence 1    | count(s_1,w_1) ... ...  count(s_1, w_v)
-            Sentence 2    | count(s_2,w_2) ... ...  count(s_2, w_v)
+            Section 1    | count(s_1,w_1) ... ...  count(s_1, w_v)
+            Section 2    | count(s_2,w_2) ... ...  count(s_2, w_v)
             ...    ...     ... ...     ...     ...     ...
-            Sentence m    | count(s_m, w_1)... ...  count(s_m, w_v)
+            Section m    | count(s_m, w_1)... ...  count(s_m, w_v)
     
-    * Topic model
-            Word/feature    | feature 1   ...     ...     feature na
+    * Topic model (Dense)
+            Word/feature    | feature 1 ...     ...     feature k
             -----------------------------------------------------
-            word 1         | tm(w1,a1) ...      ...    tm(w1, a_na)
-            ...        ...             ....            ...     ...
-            word v        | tm(w_v, a_na) ... ....   tm(w_na, a_na)
+            word 1         | p(w1 | f1) ...     ...     p(w1 | fk)
+            ...        ...              ...            ...     ...
+            word v         | p(wv | fk) ...     ...     p(wv | fk)
     
-    * Background probability
+    * Background probability (Dense)
             Word           | Background probability
             ----------------------------------------
-            word 1         |   bp_1
+            word 1         |   p(w1 | B)
             ...        ... |   ...
-            word v        |   bp_v
+            word v         |   p(wv | B)
     
-    * PI
-            Sentence/feature | feature 1 ...      ...    feature na
+    * PI (Dense)
+            Section/feature | feature 1 ...      ...    feature k
             -----------------------------------------------------
-            Sentence 1      | pi(s1,a1)  ...   ...     pi(s1, a_na)
+            Section 1       | pi(s1,f1)  ...   ...     pi(s1, fk)
             ...        ...             ....            ...     ...
-            Sentence m      | pi(sm,a1)  ...   ...     pi(sm, a_na)
+            Section m       | pi(sm,f1)  ...   ...     pi(sm, fk)
     
-    * Hidden parameters (list of one sparse matrix for each sentence)
-        - [0]:
-            Word / feature | feature 1 ... ... ... ... feature f
-            ---------------------------------------------------
-            word 1        | 0.0         ...         ...   0.0
-            word 2        | 0.0         ...         ...   0.0
-            ...    ...    |         ...     ...     ...
-            word v       | 0.0    ...              ...   0.0
+    * Hidden parameters (list of one sparse matrix for each feature)
+        - [1]:
+            section / word    | word 1 ... ... ... ... word v
+            --------------------------------------------------------
+            section 1         | p(z 1, 1 = 1)  ...     p(z 1, v = 1)
+            section 2         | p(z 2, 1 = 1)  ...     p(z 2, v = 1)
+            ...    ...        |         ...    ...     ...
+            section m         | p(z m, 1 = 1)  ...     p(z m, v = 1)
             
         - [...]:
             ... ... ... 
-        - [m]: 
-            Word / feature | feature 1 ... ... ... ... feature f
-            ---------------------------------------------------
-            word 1        | 0.0         ...         ...   0.0
-            word 2        | 0.0         ...         ...   0.0
-            ...    ...    |         ...     ...     ...
-            word v       | 0.0    ...              ...   0.0
+        - [k]: 
+            section / word    | word 1 ... ... ... ... word v
+            --------------------------------------------------------
+            section 1         | p(z 1, 1 = k)  ...     p(z 1, v = k)
+            section 2         | p(z 2, 1 = k)  ...     p(z 2, v = k)
+            ...    ...        |         ...    ...     ...
+            section m         | p(z m, 1 = k)  ...     p(z m, v = k)
 
-    * Hidden parameters background
-            Sentence/Word | word 1 ... ... ... ... word v
-            ---------------------------------------------------
-            Sentence 1    | 0.0        ...     ...   0.0
-            Sentence 2    | 0.0    ...         ...   0.0
-            ...    ...     ... ...     ...     ...   ...
-            Sentence m    | 0.0 ...             ...  0.0
+    * Hidden parameters background (sparse)
+            section / word    | word 1 ... ... ... ...  word v
+            --------------------------------------------------------
+            section 1         | p(z 1, 1 = B)  ...     p(z 1, v = B)
+            section 2         | p(z 2, 1 = B)  ...     p(z 2, v = B)
+            ...    ...        |         ...    ...     ...
+            section m         | p(z m, 1 = B)  ...     p(z m, v = B)
 """

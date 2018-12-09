@@ -9,45 +9,33 @@ import os
 import pickle
 import string
 
+
 def strip_punctuation(s):
     new_s = ''.join(c for c in s if c not in string.punctuation)
     return new_s.strip()
+
 
 class TestEmVectorByFeature(TestCase):
 
     def test_constructor_twoline(self):
         pm_inst = ParseAndModel(feature_list=["screen"],
-                                filename='../tests/data/parse_and_model/twoLineTest.txt')
+                                filename='../tests/data/parse_and_model/twoLineTest.txt', log_base=2)
         em = EmVectorByFeature(explicit_model=pm_inst)
 
-        expected_section_word_counts_matrix = [[1, 1, 1, 0, 0]
-            , [1, 0, 0, 1, 1]]
+        expected_section_word_counts_matrix = [[1, 1, 1, 0, 0], [1, 0, 0, 1, 1]]
         expected_model_background_matrix = np.array([1 / 3, 1 / 6, 1 / 6, 1 / 6, 1 / 6])
         expected_model_feature_matrix = np.array([[0.218], [0.282], [0.282], [0.109], [0.109]])
 
         self.assertEqual(True,
                          np.array_equiv(expected_section_word_counts_matrix,
-                                        csr_matrix.toarray(em.reviews_matrix)))
+                                        csr_matrix.toarray(em.reviews_matrix)), msg="section counts do not match")
         self.assertEqual(True, np.array_equiv(expected_model_background_matrix,
-                                              csr_matrix.toarray(em.background_probability)))
+                                              csr_matrix.toarray(em.background_probability)),
+                         msg="background model does not match")
         self.assertEqual(True, np.array_equiv(expected_model_feature_matrix,
-                                              np.round(em.topic_model, 3)))
+                                              np.round(em.topic_model, 3)), msg="topic models do not match")
 
         print("testing")
-
-    def test_init_twoline(self):
-        pm_inst = ParseAndModel(feature_list=["screen"],
-                                filename='../tests/data/parse_and_model/twoLineTest.txt')
-        em = EmVectorByFeature(explicit_model=pm_inst)
-
-        em.initialize_parameters()
-
-        pi_init = np.array([[1.],
-                            [1.]])
-        # em.pi_matrix.sum(axis=1)
-
-        self.assertEqual(True, np.array_equiv(pi_init, em.pi_matrix))
-
 
     def test_against_original_1_single_iteration(self):
 
@@ -71,7 +59,14 @@ class TestEmVectorByFeature(TestCase):
         hidden_back_params = pickle.load(infile)
         infile.close()
 
-        pm_inst = ParseAndModel(feature_list=["sound", "battery"], filename='data/parse_and_model/iPod.final', lemmatize_words=False, log_base=None, start_line=4, nlines=11, include_title_lines=False)
+        # load pi deltas
+        infile = open("original_code_data/test_original_1_pi_delta_it1.data", 'rb')
+        pi_delta = pickle.load(infile)
+        infile.close()
+
+        pm_inst = ParseAndModel(feature_list=["sound", "battery"], filename='data/parse_and_model/iPod.final',
+                                lemmatize_words=False, log_base=None, start_line=4, nlines=11,
+                                include_title_lines=False)
 
         em = EmVectorByFeature(explicit_model=pm_inst)
         em.initialize_parameters()
@@ -84,15 +79,17 @@ class TestEmVectorByFeature(TestCase):
             section_og_id = 0
             for section_index, section_row in review_sections.iterrows():
                 for feature_id in range(0, len(pi_init[review_id][section_og_id])):
-                    feature_name_row = pm_inst.formatted_feature_list[pm_inst.formatted_feature_list.feature_id == feature_id]
+                    feature_name_row = pm_inst.formatted_feature_list[
+                        pm_inst.formatted_feature_list.feature_id == feature_id]
                     feature_name_row = feature_name_row.reset_index(drop=True)
-                    em.pi_matrix[section_index,feature_id] = pi_init[review_id][section_og_id][feature_name_row["feature"][0]]
+                    em.pi_matrix[section_index, feature_id] = pi_init[review_id][section_og_id][
+                        feature_name_row["feature"][0]]
 
                 section_og_id += 1
 
         # set iterations
-        em.max_iter=1
-        em.lambda_background= 0.7
+        em.max_iter = 1
+        em.lambda_background = 0.7
 
         em.em_loop()
 
@@ -110,7 +107,8 @@ class TestEmVectorByFeature(TestCase):
                 for word in hidden_params[review_id][section_og_id].keys():
                     word_id = inverse_vocab_lookup[strip_punctuation(word)]
                     for feature_id in range(0, len(hidden_params[review_id][section_og_id][word])):
-                        feature_name_row = pm_inst.formatted_feature_list[pm_inst.formatted_feature_list.feature_id == feature_id]
+                        feature_name_row = pm_inst.formatted_feature_list[
+                            pm_inst.formatted_feature_list.feature_id == feature_id]
                         feature_name_row = feature_name_row.reset_index(drop=True)
                         actual_param = dense_hidden_params[feature_id][section_row["section_id"], word_id]
                         original_param = hidden_params[review_id][section_og_id][word][feature_name_row["feature"][0]]
@@ -149,9 +147,10 @@ class TestEmVectorByFeature(TestCase):
             section_og_id = 0
             for section_index, section_row in review_sections.iterrows():
                 for feature_id in range(0, len(pi_params[review_id][section_og_id])):
-                    feature_name_row = pm_inst.formatted_feature_list[pm_inst.formatted_feature_list.feature_id == feature_id]
+                    feature_name_row = pm_inst.formatted_feature_list[
+                        pm_inst.formatted_feature_list.feature_id == feature_id]
                     feature_name_row = feature_name_row.reset_index(drop=True)
-                    actual_param = em.pi_matrix[section_index,feature_id]
+                    actual_param = em.pi_matrix[section_index, feature_id]
                     original_param = pi_params[review_id][section_og_id][feature_name_row["feature"][0]]
 
                     print("checking section:" + str(section_index))
@@ -161,6 +160,11 @@ class TestEmVectorByFeature(TestCase):
                                          actual_param) + ", e=" + str(original_param))
 
                 section_og_id += 1
+
+        # Check pi deltas
+        self.assertEqual(round(pi_delta, 8), round(em.pi_delta, 8),
+                         msg="pi delta: " + ", a=" + str(
+                             em.pi_delta) + ", e=" + str(pi_delta))
 
     def test_against_original_1_double_iteration(self):
 
@@ -184,7 +188,14 @@ class TestEmVectorByFeature(TestCase):
         hidden_back_params = pickle.load(infile)
         infile.close()
 
-        pm_inst = ParseAndModel(feature_list=["sound", "battery"], filename='data/parse_and_model/iPod.final', lemmatize_words=False, log_base=None, start_line=4, nlines=11, include_title_lines=False)
+        # load pi deltas
+        infile = open("original_code_data/test_original_1_pi_delta_it2.data", 'rb')
+        pi_delta = pickle.load(infile)
+        infile.close()
+
+        pm_inst = ParseAndModel(feature_list=["sound", "battery"], filename='data/parse_and_model/iPod.final',
+                                lemmatize_words=False, log_base=None, start_line=4, nlines=11,
+                                include_title_lines=False)
 
         em = EmVectorByFeature(explicit_model=pm_inst)
         em.initialize_parameters()
@@ -197,15 +208,17 @@ class TestEmVectorByFeature(TestCase):
             section_og_id = 0
             for section_index, section_row in review_sections.iterrows():
                 for feature_id in range(0, len(pi_init[review_id][section_og_id])):
-                    feature_name_row = pm_inst.formatted_feature_list[pm_inst.formatted_feature_list.feature_id == feature_id]
+                    feature_name_row = pm_inst.formatted_feature_list[
+                        pm_inst.formatted_feature_list.feature_id == feature_id]
                     feature_name_row = feature_name_row.reset_index(drop=True)
-                    em.pi_matrix[section_index,feature_id] = pi_init[review_id][section_og_id][feature_name_row["feature"][0]]
+                    em.pi_matrix[section_index, feature_id] = pi_init[review_id][section_og_id][
+                        feature_name_row["feature"][0]]
 
                 section_og_id += 1
 
         # set iterations
-        em.max_iter=2
-        em.lambda_background= 0.7
+        em.max_iter = 2
+        em.lambda_background = 0.7
 
         em.em_loop()
 
@@ -223,7 +236,8 @@ class TestEmVectorByFeature(TestCase):
                 for word in hidden_params[review_id][section_og_id].keys():
                     word_id = inverse_vocab_lookup[strip_punctuation(word)]
                     for feature_id in range(0, len(hidden_params[review_id][section_og_id][word])):
-                        feature_name_row = pm_inst.formatted_feature_list[pm_inst.formatted_feature_list.feature_id == feature_id]
+                        feature_name_row = pm_inst.formatted_feature_list[
+                            pm_inst.formatted_feature_list.feature_id == feature_id]
                         feature_name_row = feature_name_row.reset_index(drop=True)
                         actual_param = dense_hidden_params[feature_id][section_row["section_id"], word_id]
                         original_param = hidden_params[review_id][section_og_id][word][feature_name_row["feature"][0]]
@@ -262,9 +276,10 @@ class TestEmVectorByFeature(TestCase):
             section_og_id = 0
             for section_index, section_row in review_sections.iterrows():
                 for feature_id in range(0, len(pi_params[review_id][section_og_id])):
-                    feature_name_row = pm_inst.formatted_feature_list[pm_inst.formatted_feature_list.feature_id == feature_id]
+                    feature_name_row = pm_inst.formatted_feature_list[
+                        pm_inst.formatted_feature_list.feature_id == feature_id]
                     feature_name_row = feature_name_row.reset_index(drop=True)
-                    actual_param = em.pi_matrix[section_index,feature_id]
+                    actual_param = em.pi_matrix[section_index, feature_id]
                     original_param = pi_params[review_id][section_og_id][feature_name_row["feature"][0]]
 
                     print("checking section:" + str(section_index))
@@ -275,8 +290,7 @@ class TestEmVectorByFeature(TestCase):
 
                 section_og_id += 1
 
-    def test_compute_pi_delta(self):
-
-        self.assertEqual(True, 1 < 0.001)
-
-
+        # Check pi deltas
+        self.assertEqual(round(pi_delta, 8), round(em.pi_delta, 8),
+                         msg="pi delta: " + ", a=" + str(
+                             em.pi_delta) + ", e=" + str(pi_delta))

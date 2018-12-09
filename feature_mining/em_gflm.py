@@ -72,6 +72,9 @@ class GFLM:
                 self.gflm_word_all = pd.concat([self.gflm_word_all, gflm_vals])
                 self.gflm_word = pd.concat([self.gflm_word,gflm_vals[gflm_vals.gflm_word >= word_threshold]])
 
+        self.gflm_word = self.gflm_word.reset_index(drop=True)
+        self.gflm_word_all = self.gflm_word_all.reset_index(drop = True)
+
     def calc_gflm_section(self, section_threshold:float = None):
         """
         Compute GFLM considering threshold at sentence.
@@ -87,9 +90,13 @@ class GFLM:
         gflm_vals = pd.melt(gflm_vals, id_vars='section_id')
         gflm_vals.columns = ['section_id', 'implicit_feature_id', 'gflm_section']
         gflm_vals = gflm_vals[['gflm_section', 'section_id', 'implicit_feature_id']]
+        gflm_vals["implicit_feature_id"] = pd.to_numeric(gflm_vals["implicit_feature_id"])
 
         self.gflm_section_all = gflm_vals
         self.gflm_section = gflm_vals[gflm_vals.gflm_section >= section_threshold]
+
+        self.gflm_section = self.gflm_section.reset_index(drop=True)
+        self.gflm_section_all = self.gflm_section_all.reset_index(drop=True)
 
 
 if __name__ == '__main__':

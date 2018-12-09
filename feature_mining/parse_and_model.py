@@ -20,7 +20,7 @@ class ParseAndModel:
     """
 
     def __init__(self, feature_list: list = None , filename: str = None, nlines: int = None, remove_stopwords: bool = False
-                 , start_line: int = 0, lemmatize_words: bool = True):
+                 , start_line: int = 0, lemmatize_words: bool = True, log_base: int = None, include_title_lines: bool = True):
         """
         Constructor
         """
@@ -32,14 +32,15 @@ class ParseAndModel:
         if self.feature_list is None:
             logging.warning(" >No feature list specified, skipping feature list formatting")
         else:
-            self.format_feature_list()
+            self.formatted_feature_list = self.format_feature_list()
 
         # TODO: make the method running here an arugment that can be one of the other file readers
         # Run read annotated data (or notify user this is being skipped)
         if filename is None:
             logging.warning(" >No filename specified, skipping parse step")
         else:
-            self.read_annotated_data(filename=filename, nlines=nlines, start_line=start_line)
+            self.parsed_text = self.read_annotated_data(filename=filename, nlines=nlines, start_line=start_line,
+                                                        include_title_lines=include_title_lines)
 
         # Build the explicit models and store the output
         if self.formatted_feature_list is None:
@@ -47,14 +48,15 @@ class ParseAndModel:
         elif self.parsed_text is None:
             logging.warning(" >No parsed text present, can't build explicit models")
         else:
-            self.build_explicit_models(remove_stopwords=remove_stopwords,
-                                                          lemmatize_words=lemmatize_words)
+            self.model_results = self.build_explicit_models(remove_stopwords=remove_stopwords,
+                                                          lemmatize_words=lemmatize_words ,log_base=log_base
+                                                            )
 
         # self.parsed_text2 = ParseAndModel.read_file_data(filename=filename, nlines=nlines, start_line=start_line)
 
 
     # TODO: add tests
-    def format_feature_list(self):
+    def format_feature_list(self) -> pd.DataFrame:
         """
         This function takes a list of strings and/or lists of strings and converts them to a DataFrame with ids. Terms in
         nested lists will be treated as synonyms and given the same feature id
@@ -104,11 +106,10 @@ class ParseAndModel:
 
         # Save formatted feture list to object
         # TODO: [nfr] remove this from here, return feature_df and make assignment in __init__
-        self.formatted_feature_list=feature_df
-        #return feature_df
+        return feature_df
 
     # TODO: add tests, alterate file formats
-    def read_annotated_data(self, filename: str, nlines: int = None, start_line: int = 0):
+    def read_annotated_data(self, filename: str, nlines: int = None, start_line: int = 0, include_title_lines: bool = True) -> dict:
         """
         Reads in Santu's annotated files and records the explicit features and implicit features annotated in the file
 
@@ -142,6 +143,7 @@ class ParseAndModel:
         feature_section_mapping = []
         feature_list = defaultdict(int)
         line_number = 0
+        line_count = 0
 
         with open(filename, 'r') as input_file:
             for line in input_file:
@@ -203,26 +205,37 @@ class ParseAndModel:
                         # Increment the feature in the unique feature list
                         feature_list[feature_text] += 1
 
+                # Check if title lines should be included
+                if not include_title_lines and is_title:
+                    # Check if max number of lines has been reached yet
+                    line_count += 1
+                    if nlines is not None:
+                        if line_count >= nlines:
+                            break
+
+                    continue
+
                 # Add section line to data set
                 section_list.append(
                     {"doc_id": doc_id, "section_id": section_id, "section_text": line_text, "title": is_title})
 
                 # Increment section id
                 section_id += 1
+                line_count += 1
                 # print(line)
 
                 # Check if max number of lines has been reached yet
                 if nlines is not None:
-                    if section_id >= nlines:
+                    if line_count >= nlines:
                         break
 
         # Bundle and save data set
         # TODO: [nfr] remove this from here, return dictionary and make assignment in __init__
-        self.parsed_text = dict(section_list=pd.DataFrame(section_list), feature_mapping=pd.DataFrame(feature_section_mapping),
+        return dict(section_list=pd.DataFrame(section_list), feature_mapping=pd.DataFrame(feature_section_mapping),
                     feature_list=feature_list)
 
-        # TODO: add tests, alterate file formats
-        def read_file_data(filename: str, nlines: int = None, start_line: int = 0) -> dict:
+    # TODO: add tests, alterate file formats
+    def read_file_data(filename: str, nlines: int = None, start_line: int = 0) -> dict:
             """
             Reads in Santu's annotated files and records the explicit features and implicit features annotated in the file
 
@@ -410,7 +423,8 @@ class ParseAndModel:
 
     # TODO: Slow, needs to be optimized, unit tests need to be added
     def build_explicit_models(self, remove_stopwords: bool = False,
-                              lemmatize_words: bool = True) -> dict:
+                              lemmatize_words: bool = True,
+                              log_base: int = None) -> dict:
         """
         This function builds a background model, set of topic models and summarizes the counts of words in each sentence
             to prepare for EM optimization
@@ -496,6 +510,9 @@ class ParseAndModel:
             # filtering not necessary because of tfidf term in topic model?
             current_section_words = []
             for word in section:
+                if word.lower_.strip()=='':
+                    continue
+
                 if (not word.is_stop or not remove_stopwords) and not word.is_punct:
                     cleaned_word = word.lemma_ if (word.lemma_ != '-PRON-' and lemmatize_words) else word.lower_
                     current_section_words.append(cleaned_word)
@@ -541,10 +558,10 @@ class ParseAndModel:
                     feature_section_mapping.append({"section_id": row["section_id"], "feature_id": row_f["feature_id"]})
 
                     # if we only count each word once
-                    feature_word_counter[row_f["feature_id"]].update(current_section_word_counts.keys())
+                    #feature_word_counter[row_f["feature_id"]].update(current_section_word_counts.keys())
 
                     # if we count each words as many times as it occurs
-                    # featureCounter[row_f["feature_id"]].update(current_section_words)
+                    feature_word_counter[row_f["feature_id"]].update(current_section_words)
 
         # At this point we have all the counts we need to build the topic models
 
@@ -577,15 +594,23 @@ class ParseAndModel:
         for word in collection_word_counts.keys():
             # print(word)
 
+            if word == 'it':
+                print("stop here")
+
             for current_feature in unique_feature_ids:
                 # print(str(index) + "-" + row["feature"])
 
-                ##########################################################################
-                # Formula 4, section 4.2, using base 2 logs, also adds +1 from Formula 5
-                #########################################################################
-                tfidf = math.log(1 + feature_word_counter[current_feature][word], 2) \
-                        * math.log(1 + section_count / word_section_counter[word], 2) \
-                        + 1
+                #######################################################################################################
+                # Formula 4, section 4.2, using base e logs by default but can be changed, also adds +1 from Formula 5
+                #######################################################################################################
+                if log_base is None:
+                    tfidf = math.log(1 + feature_word_counter[current_feature][word]) \
+                            * math.log(1 + section_count / word_section_counter[word]) \
+                            + 1
+                else :
+                    tfidf = math.log(1 + feature_word_counter[current_feature][word], log_base) \
+                            * math.log(1 + section_count / word_section_counter[word], log_base) \
+                            + 1
                 # print(str(tfidf))
 
                 tfidf_feature[current_feature][word] = tfidf
@@ -599,7 +624,7 @@ class ParseAndModel:
             # print("normalizing " + str(index))
 
             #########################################################################################################
-            # Formula 5, section 4.2, using base 2 logs, +1 in numerator already taken care of in tfidf calculation
+            # Formula 5, section 4.2, using base e logs by default, +1 in numerator already taken care of in tfidf calculation
             #########################################################################################################
             model_feature.append([])
             for word, word_id in vocabulary.items():
@@ -625,7 +650,7 @@ class ParseAndModel:
 
         # Save model results to object
         # TODO: [nfr] remove this from here, return feature_df and make assignment in __init__
-        self.model_results = dict(model_background=model_background, model_feature=model_feature,
+        return dict(model_background=model_background, model_feature=model_feature,
                              section_word_counts_matrix=csr_matrix(section_word_counts_matrix),
                              model_background_matrix=model_background_matrix, model_feature_matrix=model_feature_matrix,
                              vocabulary_lookup=vocabulary_lookup)

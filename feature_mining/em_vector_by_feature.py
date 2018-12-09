@@ -291,7 +291,7 @@ class EmVectorByFeature(ExpectationMaximization):
 
         # Calculate non-feature dependent portion of m-step numerator: c(w,s) (1-P(z_sw = B))
         multiplier = self.hidden_parameters_background.multiply(-1)
-        multiplier.data -= 1
+        multiplier.data += 1
         multiplier = self.reviews_matrix.multiply(multiplier)
 
         # For each feature calculate numerator

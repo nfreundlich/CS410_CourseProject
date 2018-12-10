@@ -38,11 +38,9 @@ REQUIRED = ["spacy==2.0.16",
 
 #TODO: add package data with demo files: https://docs.python.org/3/distutils/sourcedist.html#manifest
 
-
-
 setuptools.setup(
     name="feature_mining",
-    version="0.0.16",
+    version="0.0.18",
     author="H. Wilder, N. Freundlich, Santu Karmaker",
     author_email="hwilder3@illinois.edu, norbert4@illinois.edu, karmake2@illinois.edu",
     description="Mine implicit features using a generative feature language model.",

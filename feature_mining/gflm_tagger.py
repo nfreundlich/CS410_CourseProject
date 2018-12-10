@@ -26,8 +26,8 @@ class GFLM:
             logging.info("Using EM results object for GFLM")
             self.em_results=em_results
 
-            self.hidden_background = em_results.hidden_background
-            self.hidden_params = em_results.hidden_params
+            self.hidden_background = em_results.hidden_parameters_background
+            self.hidden_params = em_results.hidden_parameters
             self.pi_matrix = em_results.pi_matrix
         else:
             self.hidden_background = hidden_background
@@ -47,11 +47,16 @@ class GFLM:
         """
         Compute GFLM word.
         :param word_threshold: threshold to be used for gflm word
-        :return: TBD
+        :return: DataFrame holding mapping from section_id to implicit feature_id based on GFLM word
         """
         if word_threshold is None:
             word_threshold = self.word_threshold
 
+        # Pre-calculate 1-P(z s,w = B)
+        background_multiplier = self.hidden_background.multiply(-1)
+        background_multiplier.data += 1
+
+        # Loop through features
         for feature in range(0, self.f):
             #self.em_results.hidden_parameters_background
             #self.em_results.hidden_parameters[feature]
@@ -59,8 +64,8 @@ class GFLM:
             # self.hidden_params
             # self.hidden_background
 
-            gflm_vals = self.hidden_params[feature] * (1 - self.hidden_background)
-            gflm_vals = pd.DataFrame(gflm_vals.max(axis=1))
+            gflm_vals = self.hidden_params[feature].multiply(background_multiplier)
+            gflm_vals = pd.DataFrame(gflm_vals.max(axis=1).toarray())
             gflm_vals['section_id'] = gflm_vals.index.values
             gflm_vals['implicit_feature_id'] = feature
             gflm_vals.columns = ['gflm_word', 'section_id', 'implicit_feature_id']
@@ -75,11 +80,13 @@ class GFLM:
         self.gflm_word = self.gflm_word.reset_index(drop=True)
         self.gflm_word_all = self.gflm_word_all.reset_index(drop = True)
 
+        return self.gflm_word
+
     def calc_gflm_section(self, section_threshold:float = None):
         """
         Compute GFLM considering threshold at sentence.
         :param section_threshold: threshold to be used for gflm section
-        :return:
+        :return: DataFrame holding mapping from section_id to implicit feature_id based on GFLM section
         """
 
         if section_threshold is None:
@@ -98,6 +105,7 @@ class GFLM:
         self.gflm_section = self.gflm_section.reset_index(drop=True)
         self.gflm_section_all = self.gflm_section_all.reset_index(drop=True)
 
+        return self.gflm_section
 
 if __name__ == '__main__':
     pi_matrix = np.array([[.1, .2, .3], [.4, .5, .6]])

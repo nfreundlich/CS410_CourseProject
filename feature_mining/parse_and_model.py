@@ -5,9 +5,12 @@ import numpy as np
 from scipy.sparse import csr_matrix
 import nltk
 from nltk.tokenize import sent_tokenize
-import en_core_web_sm
-# import spacy
-# from spacy.attrs import LOWER, ORTH
+from spacy.cli.download import download as spacy_download
+try:
+    import en_core_web_sm
+except ImportError:
+    logging.warning(">Spacy  en_core_web_sm not found. Downloading and installing.")
+    spacy_download("en_core_web_sm")
 from collections import Counter, defaultdict, OrderedDict
 import time
 import os

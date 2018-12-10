@@ -3,6 +3,11 @@
 ## Description
 TBD
 
+## Install
+```
+pip install feature_mining
+```
+
 ## Usage
 TBD
 

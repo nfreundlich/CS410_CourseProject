@@ -6,7 +6,6 @@ from datetime import datetime
 import os
 import logging
 
-
 class EmVectorByFeature(ExpectationMaximization):
     """
     Vectorized implementation of EM algorithm. Loops over features.

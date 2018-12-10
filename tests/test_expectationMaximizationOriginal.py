@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import unittest
 from unittest import TestCase
 from feature_mining import ExpectationMaximizationOriginal
 import numpy as np

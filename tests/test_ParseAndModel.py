@@ -53,6 +53,53 @@ class TestParseAndModel(TestCase):
         print(pm.formatted_feature_list)
         self.assertEqual(True, pd.DataFrame.equals(df, pm.formatted_feature_list))
 
+    def test_read_plain_dat_one_line(self):
+        pm = ParseAndModel(filename='../tests/data/parse_and_model/oneLinePerDoc.txt', input_type="oneDocPerLine", nlines=1)
+
+        df_section_list = pd.DataFrame([[0, 0, "I am very pleased with the 4 GB iPod Nano that I purchased."],
+                                        [0, 1, "It was very easy to download music onto it and it's very easy to move around in it."],
+                                        [0, 2, "Recommend this item to anybody."]],
+                                       columns=["doc_id", "section_id", "section_text"])
+
+        self.assertEqual(True, pd.DataFrame.equals(df_section_list, pm.parsed_text["section_list"]))
+
+    def test_read_plain_dat_two_line(self):
+        pm = ParseAndModel(filename='../tests/data/parse_and_model/oneLinePerDoc.txt', input_type="oneDocPerLine", nlines=2)
+
+        df_section_list = pd.DataFrame([[0, 0, "I am very pleased with the 4 GB iPod Nano that I purchased."],
+                                        [0, 1, "It was very easy to download music onto it and it's very easy to move around in it."],
+                                        [0, 2, "Recommend this item to anybody."],
+                                        [1, 3, "I like the compact ipod and the features it offered."],
+                                        [1, 4, "It is handy to carry around because of the  and easy to store."],
+                                        [1, 5, "The light weight also makes it easy to move with."],
+                                        [1, 6, "It works well and I have had no problems with it."]],
+                                       columns=["doc_id", "section_id", "section_text"])
+
+        self.assertEqual(True, pd.DataFrame.equals(df_section_list, pm.parsed_text["section_list"]))
+
+    def test_read_plain_dat_three_line(self):
+        pm = ParseAndModel(filename='../tests/data/parse_and_model/oneLinePerDoc.txt', input_type="oneDocPerLine")
+
+        df_section_list = pd.DataFrame([[0, 0, "I am very pleased with the 4 GB iPod Nano that I purchased."],
+                                        [0, 1, "It was very easy to download music onto it and it's very easy to move around in it."],
+                                        [0, 2, "Recommend this item to anybody."],
+                                        [1, 3, "I like the compact ipod and the features it offered."],
+                                        [1, 4, "It is handy to carry around because of the  and easy to store."],
+                                        [1, 5, "The light weight also makes it easy to move with."],
+                                        [1, 6, "It works well and I have had no problems with it."],
+                                        [2, 7, "This is my second iPod."],
+                                        [2, 8, 'My first was a "mini" which the nano makes look like a "jumbo".'],
+                                        [2, 9, "It's very lightweight, sound quality is typical of these devices."],
+                                        [2, 10, "The battery life is outstanding (again, compared to the mini)."],
+                                        [2, 11, "I've only had it for a month, but the battery so far is lasting over 8 hours."],
+                                        [2, 12,
+                                         "I haven't completely run it until it is dead yet, so I don't know how long it will really last."],
+                                        [2, 13,"Awesome!"],
+                                        ],
+                                       columns=["doc_id", "section_id", "section_text"])
+
+        self.assertEqual(True, pd.DataFrame.equals(df_section_list, pm.parsed_text["section_list"]))
+
     def test_read_annotated_dat_one_line(self):
         pm = ParseAndModel()
 

@@ -54,7 +54,7 @@ class TestParseAndModel(TestCase):
         self.assertEqual(True, pd.DataFrame.equals(df, pm.formatted_feature_list))
 
     def test_read_plain_dat_one_line(self):
-        pm = ParseAndModel(filename='../tests/data/parse_and_model/oneLinePerDoc.txt', input_type="oneDocPerLine", nlines=1)
+        pm = ParseAndModel(filename='../tests/data/parse_and_model/oneLinePerDoc.txt', input_type=ParseAndModel.InputType.docperline, nlines=1)
 
         df_section_list = pd.DataFrame([[0, 0, "I am very pleased with the 4 GB iPod Nano that I purchased."],
                                         [0, 1, "It was very easy to download music onto it and it's very easy to move around in it."],
@@ -64,7 +64,7 @@ class TestParseAndModel(TestCase):
         self.assertEqual(True, pd.DataFrame.equals(df_section_list, pm.parsed_text["section_list"]))
 
     def test_read_plain_dat_two_line(self):
-        pm = ParseAndModel(filename='../tests/data/parse_and_model/oneLinePerDoc.txt', input_type="oneDocPerLine", nlines=2)
+        pm = ParseAndModel(filename='../tests/data/parse_and_model/oneLinePerDoc.txt', input_type=ParseAndModel.InputType.docperline, nlines=2)
 
         df_section_list = pd.DataFrame([[0, 0, "I am very pleased with the 4 GB iPod Nano that I purchased."],
                                         [0, 1, "It was very easy to download music onto it and it's very easy to move around in it."],
@@ -78,7 +78,7 @@ class TestParseAndModel(TestCase):
         self.assertEqual(True, pd.DataFrame.equals(df_section_list, pm.parsed_text["section_list"]))
 
     def test_read_plain_dat_three_line(self):
-        pm = ParseAndModel(filename='../tests/data/parse_and_model/oneLinePerDoc.txt', input_type="oneDocPerLine")
+        pm = ParseAndModel(filename='../tests/data/parse_and_model/oneLinePerDoc.txt', input_type=ParseAndModel.InputType.docperline)
 
         df_section_list = pd.DataFrame([[0, 0, "I am very pleased with the 4 GB iPod Nano that I purchased."],
                                         [0, 1, "It was very easy to download music onto it and it's very easy to move around in it."],

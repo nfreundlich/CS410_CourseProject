@@ -1,33 +1,44 @@
+import math
+import logging
 import pandas as pd
 import numpy as np
 from scipy.sparse import csr_matrix
-import metapy
-import spacy
-from spacy.attrs import LOWER, ORTH
-from nltk.tokenize import sent_tokenize
 import nltk
-
-nltk.download('punkt')
+from nltk.tokenize import sent_tokenize
 import en_core_web_sm
-from collections import Counter
-from collections import defaultdict, OrderedDict
-import math
-import logging
-from datetime import datetime
+# import spacy
+# from spacy.attrs import LOWER, ORTH
+from collections import Counter, defaultdict, OrderedDict
 import time
 import os
+from enum import Enum, auto
 
 
 class ParseAndModel:
     """
     Treats data input chain.
     Based on this data, computes matrices for reviews and features.
+    Usage:
+        pm = ParseAndModel(feature_list=["sound", "battery", ["screen", "display"]],
+                       filename='../tests/data/parse_and_model/iPod.final')
+        print(pm.model_results)
     """
 
-    def __init__(self, feature_list: list = None, filename: str = None, input_type: str = "annotated",
+    class InputType(Enum):
+        """
+        Enum holding the types of input files.
+        """
+        annotated = auto()
+        docperline = auto()
+
+    def __init__(self, feature_list: list = None,
+                 filename: str = None,
+                 input_type: Enum = InputType.annotated,
                  nlines: int = None,
-                 remove_stopwords: bool = True
-                 , start_line: int = 0, lemmatize_words: bool = True, log_base: int = None,
+                 remove_stopwords: bool = True,
+                 start_line: int = 0,
+                 lemmatize_words: bool = True,
+                 log_base: int = None,
                  include_title_lines: bool = True):
         """
 
@@ -49,7 +60,13 @@ class ParseAndModel:
         :param include_title_lines: Set to true to include lines as marked in title lines in the output, false otherwise
             only valid for annotated data input
         """
-        # TODO: [nfr] To check whether the entire workflow should be in the constructor. Ok for now.
+        # Test nltk dependencies
+        nltk_punkt = nltk.data.find('tokenizers/punkt')
+        if nltk_punkt is None:
+            logging.warning(" >NLTK punkt not present: downloading nltk punkt.")
+            nltk.download('punkt')
+        else:
+            logging.info(" >Ok: NLTK punkt present.")
 
         # Run feature list formatter and save output (or notify user this is being skipped)
         self.feature_list = feature_list
@@ -63,11 +80,11 @@ class ParseAndModel:
         if filename is None:
             logging.warning(" >No filename specified, skipping parse step")
         else:
-            if input_type == "annotated":
+            if input_type == ParseAndModel.InputType.annotated:
                 logging.info("Reading data from annotated file")
                 self.parsed_text = self.read_annotated_data(filename=filename, nlines=nlines, start_line=start_line,
                                                             include_title_lines=include_title_lines)
-            elif input_type == "oneDocPerLine":
+            elif input_type == ParseAndModel.InputType.docperline:
                 logging.info("Reading data from un-annotated file. Assuming one document per line.")
                 self.parsed_text = self.read_file_data(filename=filename, nlines=nlines, start_line=start_line)
 
@@ -81,7 +98,8 @@ class ParseAndModel:
             logging.warning(" >No parsed text present, can't build explicit models")
         else:
             self.model_results = self.build_explicit_models(remove_stopwords=remove_stopwords,
-                                                            lemmatize_words=lemmatize_words, log_base=log_base
+                                                            lemmatize_words=lemmatize_words,
+                                                            log_base=log_base
                                                             )
 
         # self.parsed_text2 = ParseAndModel.read_file_data(filename=filename, nlines=nlines, start_line=start_line)
@@ -128,7 +146,7 @@ class ParseAndModel:
 
         feature_df = pd.DataFrame(formatted_feature_list)
 
-        # Save formatted feture list to object
+        # Save formatted feature list to object
         # TODO: [nfr] remove this from here, return feature_df and make assignment in __init__
         return feature_df
 
@@ -279,7 +297,7 @@ class ParseAndModel:
                 section_text: cleaned (lowercase, trimmed) section text
                 title: True if the line is a title, False otherwise
         """
-
+        logging.info("Reading data from file: ", filename)
         doc_id = -1
         section_id = 0
         section_list = []
@@ -316,7 +334,7 @@ class ParseAndModel:
 
                 # Check if max number of lines has been reached yet
                 if nlines is not None:
-                    if doc_id+1 >= nlines:
+                    if doc_id + 1 >= nlines:
                         break
 
         # Bundle and return data set
@@ -364,7 +382,7 @@ class ParseAndModel:
                 key: word id used in models, matrices, etc.
                 value: actual word
         """
-        logging.info("Building explicit models")
+        logging.info("Building explicit models.")
         text_set = self.parsed_text["section_list"]
         feature_set = self.formatted_feature_list
 
@@ -535,7 +553,6 @@ class ParseAndModel:
         vocabulary_lookup = {v: k for k, v in vocabulary.items()}
 
         # Save model results to object
-        # TODO: [nfr] remove this from here, return feature_df and make assignment in __init__
         return dict(model_background=model_background, model_feature=model_feature,
                     section_word_counts_matrix=csr_matrix(section_word_counts_matrix),
                     model_background_matrix=model_background_matrix, model_feature_matrix=model_feature_matrix,
@@ -652,24 +669,11 @@ if __name__ == '__main__':
     print("CWD:", os.getcwd())
     start_time = time.time()
 
-    pm = ParseAndModel()
+    print("Calling ParseAndModel...")
+    pm = ParseAndModel(feature_list=["sound", "battery", ["screen", "display"]],
+                       filename='../tests/data/parse_and_model/iPod.final')
 
-    parsed_raw_file_data = pm.read_file_data(filename='../tests/data/parse_and_model/oneLinePerDoc.txt')
-
-    # TODO: [nfr] Document this workflow
-    print("formatting feature list")
-    pm.feature_list = ["sound", "battery", ["screen", "display"]]
-    pm.format_feature_list()
-    # feature_list = ParseAndModel.format_feature_list(feature_list=["sound", "battery", ["screen", "display"]])
-
-    print("reading annotated data")
-    pm.read_annotated_data(filename='../tests/data/parse_and_model/iPod.final', nlines=500)
-    # annotated_data = ParseAndModel.(filename='demo_files/iPod.final', nlines=500)
-
-    print("parsing text and building explicit feature models: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-    pm.build_explicit_models()
-    # em_input = pm.build_explicit_models(text_set=annotated_data["section_list"], feature_set=feature_list)
-    print("parsing text and building explicit feature models: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    print(pm.model_results)
 
     end_time = time.time()
     print("Elapsed: {} seconds".format(round(end_time - start_time, 4)))

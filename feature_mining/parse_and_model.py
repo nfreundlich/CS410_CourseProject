@@ -11,6 +11,7 @@ try:
 except ImportError:
     logging.warning(">Spacy  en_core_web_sm not found. Downloading and installing.")
     spacy_download("en_core_web_sm")
+    import en_core_web_sm
 from collections import Counter, defaultdict, OrderedDict
 import time
 import os

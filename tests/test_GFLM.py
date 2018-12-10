@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from unittest import TestCase
-from feature_mining.em_gflm import GFLM
+from feature_mining.gflm_tagger import GFLM
 import numpy as np
 import pandas as pd
 from collections import defaultdict, OrderedDict, Counter

@@ -1,30 +1,72 @@
+import math
+import logging
 import pandas as pd
 import numpy as np
 from scipy.sparse import csr_matrix
-import metapy
-import spacy
-from spacy.attrs import LOWER, ORTH
+import nltk
+from nltk.tokenize import sent_tokenize
 import en_core_web_sm
-from collections import Counter
-from collections import defaultdict, OrderedDict
-import math
-import logging
-from datetime import datetime
+# import spacy
+# from spacy.attrs import LOWER, ORTH
+from collections import Counter, defaultdict, OrderedDict
 import time
 import os
+from enum import Enum, auto
+
 
 class ParseAndModel:
     """
     Treats data input chain.
     Based on this data, computes matrices for reviews and features.
+    Usage:
+        pm = ParseAndModel(feature_list=["sound", "battery", ["screen", "display"]],
+                       filename='../tests/data/parse_and_model/iPod.final')
+        print(pm.model_results)
     """
 
-    def __init__(self, feature_list: list = None , filename: str = None, nlines: int = None, remove_stopwords: bool = False
-                 , start_line: int = 0, lemmatize_words: bool = True):
+    class InputType(Enum):
         """
-        Constructor
+        Enum holding the types of input files.
         """
-        # TODO: [nfr] To check whether the entire workflow should be in the constructor. Ok for now.
+        annotated = auto()
+        docperline = auto()
+
+    def __init__(self, feature_list: list = None,
+                 filename: str = None,
+                 input_type: Enum = InputType.annotated,
+                 nlines: int = None,
+                 remove_stopwords: bool = True,
+                 start_line: int = 0,
+                 lemmatize_words: bool = True,
+                 log_base: int = None,
+                 include_title_lines: bool = True):
+        """
+
+
+        :param feature_list: a list of strings and lists of strings. Individual strings will be given separate ids, lists
+        of strings will be treated as synonyms and given the same feature id.
+        ex. ["sound", "battery", ["screen", "display"]]
+        :param filename: Filename for the data set
+        :param input_type: A string specifying the type of input data so the correct read function can be chosen
+            options are "annotated" - which expects data in Santu's original format and "oneDocPerLine" - which expects
+            all data to be in a single file with one document per line
+        :param nlines: Maximum number of lines from the file to read or None to read all lines
+        :param remove_stopwords: Set to true if stop words should be removed from document sections before models are
+            created
+        :param start_line: Optional parameter, specific line number to start at, mostly for testing purposes
+        :param lemmatize_words: Set to true if lemmatization should be performed on document sections before models are
+            created
+        :param log_base: Optional parameter to specify log base, defaults to ln if not set
+        :param include_title_lines: Set to true to include lines as marked in title lines in the output, false otherwise
+            only valid for annotated data input
+        """
+        # Test nltk dependencies
+        nltk_punkt = nltk.data.find('tokenizers/punkt')
+        if nltk_punkt is None:
+            logging.warning(" >NLTK punkt not present: downloading nltk punkt.")
+            nltk.download('punkt')
+        else:
+            logging.info(" >Ok: NLTK punkt present.")
 
         # Run feature list formatter and save output (or notify user this is being skipped)
         self.feature_list = feature_list
@@ -32,14 +74,22 @@ class ParseAndModel:
         if self.feature_list is None:
             logging.warning(" >No feature list specified, skipping feature list formatting")
         else:
-            self.format_feature_list()
+            self.formatted_feature_list = self.format_feature_list()
 
-        # TODO: make the method running here an arugment that can be one of the other file readers
         # Run read annotated data (or notify user this is being skipped)
         if filename is None:
             logging.warning(" >No filename specified, skipping parse step")
         else:
-            self.read_annotated_data(filename=filename, nlines=nlines, start_line=start_line)
+            if input_type == ParseAndModel.InputType.annotated:
+                logging.info("Reading data from annotated file")
+                self.parsed_text = self.read_annotated_data(filename=filename, nlines=nlines, start_line=start_line,
+                                                            include_title_lines=include_title_lines)
+            elif input_type == ParseAndModel.InputType.docperline:
+                logging.info("Reading data from un-annotated file. Assuming one document per line.")
+                self.parsed_text = self.read_file_data(filename=filename, nlines=nlines, start_line=start_line)
+
+            else:
+                raise Exception("Invalid input type. Options are 'annotated' and 'oneDocPerLine'")
 
         # Build the explicit models and store the output
         if self.formatted_feature_list is None:
@@ -47,23 +97,20 @@ class ParseAndModel:
         elif self.parsed_text is None:
             logging.warning(" >No parsed text present, can't build explicit models")
         else:
-            self.build_explicit_models(remove_stopwords=remove_stopwords,
-                                                          lemmatize_words=lemmatize_words)
+            self.model_results = self.build_explicit_models(remove_stopwords=remove_stopwords,
+                                                            lemmatize_words=lemmatize_words,
+                                                            log_base=log_base
+                                                            )
 
         # self.parsed_text2 = ParseAndModel.read_file_data(filename=filename, nlines=nlines, start_line=start_line)
 
-
-    # TODO: add tests
-    def format_feature_list(self):
+    def format_feature_list(self) -> pd.DataFrame:
         """
         This function takes a list of strings and/or lists of strings and converts them to a DataFrame with ids. Terms in
         nested lists will be treated as synonyms and given the same feature id
 
         ex. feature_list = format_feature_list(feature_list = ["sound", "battery", ["screen", "display"]])
 
-        :param feature_list: a list of strings and lists of strings. Individual strings will be given separate ids, lists
-        of strings will be treated as synonyms and given the same feature id.
-        ex. ["sound", "battery", ["screen", "display"]]
         :return: DataFrame with integer ids for each feature, synonyms are grouped together
         | feature (str) | feature_id (int)  | feature_term_id (int)
         feature: string representation of the feature
@@ -71,7 +118,7 @@ class ParseAndModel:
         feature_term_id: integer id for the feature, will be unique for each string, including synonyms
 
         """
-        feature_list=self.feature_list
+        feature_list = self.feature_list
 
         feature_index = 0
         feature_term_index = 0
@@ -80,15 +127,12 @@ class ParseAndModel:
         # loop through list of features
         for feature in feature_list:
             if isinstance(feature, str):
-                # print("string")
                 formatted_feature_list.append(
                     {"feature_term_id": feature_term_index, "feature_id": feature_index, "feature": feature})
                 feature_term_index += 1
             elif isinstance(feature, list):
-                # print('list')
                 for synonym in feature:
                     if isinstance(synonym, str):
-                        # print('>string')
                         formatted_feature_list.append(
                             {"feature_term_id": feature_term_index, "feature_id": feature_index, "feature": synonym})
                         feature_term_index += 1
@@ -102,23 +146,24 @@ class ParseAndModel:
 
         feature_df = pd.DataFrame(formatted_feature_list)
 
-        # Save formatted feture list to object
+        # Save formatted feature list to object
         # TODO: [nfr] remove this from here, return feature_df and make assignment in __init__
-        self.formatted_feature_list=feature_df
-        #return feature_df
+        return feature_df
 
     # TODO: add tests, alterate file formats
-    def read_annotated_data(self, filename: str, nlines: int = None, start_line: int = 0):
+    def read_annotated_data(self, filename: str, nlines: int = None, start_line: int = 0,
+                            include_title_lines: bool = True) -> dict:
         """
         Reads in Santu's annotated files and records the explicit features and implicit features annotated in the file
 
         ex. annotated_data = read_annotated_data(filename='demo_files/iPod.final', nlines=200)
         ex. annotated_data = read_annotated_data(filename='demo_files/iPod.final', nlines=2)
 
-        :param filename: Filename for the annotated data set
-        :param nlines: Maximum number of lines from the file to read or None to read all lines
-        :param start_line: Optional parameter, specific line number to start at, mostly for testing purposes
-        :return: a dictionary with the following data
+       :param filename: Filename for the annotated data set
+       :param nlines: Maximum number of lines from the file to read or None to read all lines
+       :param start_line: Optional parameter, specific line number to start at, mostly for testing purposes
+       :param include_title_lines: Set to true to include lines as marked in title lines in the output, false otherwise
+       :return: a dictionary with the following data
             section_list: DataFrame with the following form
                 | doc_id (int)  | section_id (int)  | section_text (str)    | title (bool)  |
                 doc_id: integer id for the document
@@ -134,14 +179,14 @@ class ParseAndModel:
             feature_list: dictionary with each feature and the number of sections it appears in
                 key: feature name
                 value: number of sections in which the feature appears
-        """
-
+       """
         doc_id = -1
         section_id = 0
         section_list = []
         feature_section_mapping = []
         feature_list = defaultdict(int)
         line_number = 0
+        line_count = 0
 
         with open(filename, 'r') as input_file:
             for line in input_file:
@@ -178,17 +223,17 @@ class ParseAndModel:
 
                 # Look for feature annotations attached to the line
                 feature_string = line.split('##')[0].split(',')
-                # print(feature_string)
+                logging.debug(feature_string)
                 if not is_title and feature_string[0] != '':
 
                     # Loop through all the features found in the annotation
                     for feature in feature_string:
-                        # print(feature)
+                        logging.debug(feature)
 
                         # Check if the feature in the annotation is marked as an implicit mention
                         if '[u]' in feature:
                             explicit_feature = False
-                            # print('implicit')
+                            logging.debug('implicit')
                         else:
                             explicit_feature = True
 
@@ -203,146 +248,45 @@ class ParseAndModel:
                         # Increment the feature in the unique feature list
                         feature_list[feature_text] += 1
 
+                # Check if title lines should be included
+                if not include_title_lines and is_title:
+                    # Check if max number of lines has been reached yet
+                    line_count += 1
+                    if nlines is not None:
+                        if line_count >= nlines:
+                            break
+
+                    continue
+
                 # Add section line to data set
                 section_list.append(
                     {"doc_id": doc_id, "section_id": section_id, "section_text": line_text, "title": is_title})
 
                 # Increment section id
                 section_id += 1
-                # print(line)
+                line_count += 1
+                logging.debug(line)
 
                 # Check if max number of lines has been reached yet
                 if nlines is not None:
-                    if section_id >= nlines:
+                    if line_count >= nlines:
                         break
 
         # Bundle and save data set
         # TODO: [nfr] remove this from here, return dictionary and make assignment in __init__
-        self.parsed_text = dict(section_list=pd.DataFrame(section_list), feature_mapping=pd.DataFrame(feature_section_mapping),
+        return dict(section_list=pd.DataFrame(section_list), feature_mapping=pd.DataFrame(feature_section_mapping),
                     feature_list=feature_list)
 
-        # TODO: add tests, alterate file formats
-        def read_file_data(filename: str, nlines: int = None, start_line: int = 0) -> dict:
-            """
-            Reads in Santu's annotated files and records the explicit features and implicit features annotated in the file
-
-            ex. annotated_data = read_annotated_data(filename='demo_files/iPod.final', nlines=200)
-            ex. annotated_data = read_annotated_data(filename='demo_files/iPod.final', nlines=2)
-
-            :param filename: Filename for the annotated data set
-            :param nlines: Maximum number of lines from the file to read or None to read all lines
-            :param start_line: Optional parameter, specific line number to start at, mostly for testing purposes
-            :return: a dictionary with the following data
-                section_list: DataFrame with the following form
-                    | doc_id (int)  | section_id (int)  | section_text (str)    | title (bool)  |
-                    doc_id: integer id for the document
-                    section_id: integer id for the section
-                    section_text: cleaned (lowercase, trimmed) section text
-                    title: True if the line is a title, False otherwise
-                feature_section_mapping: DataFrame
-                    | doc_id (int)  | feature (str) | is_explicit (bool)    | section_id (int)  |
-                    doc_id: integer id for the document
-                    feature: the string form of the feature in the annotation
-                    is_explicit: False if the feature was marked in the annotation as an implicit mention, True otherwise
-                    section_id: integer id for the section
-                feature_list: dictionary with each feature and the number of sections it appears in
-                    key: feature name
-                    value: number of sections in which the feature appears
-            """
-
-            doc_id = -1
-            section_id = 0
-            section_list = []
-            feature_section_mapping = []
-            feature_list = defaultdict(int)
-            line_number = 0
-
-            with open(filename, 'r') as input_file:
-                for line in input_file:
-
-                    # Skip line if before specified start
-                    if line_number < start_line:
-                        # Increment line number
-                        line_number += 1
-                        continue
-                    else:
-                        # Increment line number
-                        line_number += 1
-
-                    # Section is from new doc, increment doc id
-                    if '[t]' in line:
-                        doc_id += 1
-                        is_title = True
-                        line_text = line.split('[t]')[1].strip().lower()
-
-                    # Section is from new doc, increment doc id
-                    elif line.startswith('*'):
-                        doc_id += 1
-                        is_title = True
-                        line_text = line.split('*')[1].strip().lower()
-
-                    # Section not from new doc, just get cleaned text
-                    else:
-                        is_title = False
-                        line_text = line.split('##')[1].strip().lower()
-
-                    # If we still haven't seen a title increment the document id anyway
-                    if doc_id == -1:
-                        doc_id += 1
-
-                    # Look for feature annotations attached to the line
-                    feature_string = line.split('##')[0].split(',')
-                    # print(feature_string)
-                    if not is_title and feature_string[0] != '':
-
-                        # Loop through all the features found in the annotation
-                        for feature in feature_string:
-                            # print(feature)
-
-                            # Check if the feature in the annotation is marked as an implicit mention
-                            if '[u]' in feature:
-                                explicit_feature = False
-                                # print('implicit')
-                            else:
-                                explicit_feature = True
-
-                            # Get the actual text of the feature
-                            feature_text = feature.split('[@]')[0]
-
-                            # Add the feature and section id to the data set
-                            feature_section_mapping.append(
-                                {"doc_id": doc_id, "section_id": section_id, "feature": feature_text,
-                                 "is_explicit": explicit_feature})
-
-                            # Increment the feature in the unique feature list
-                            feature_list[feature_text] += 1
-
-                    # Add section line to data set
-                    section_list.append(
-                        {"doc_id": doc_id, "section_id": section_id, "section_text": line_text, "title": is_title})
-
-                    # Increment section id
-                    section_id += 1
-                    # print(line)
-
-                    # Check if max number of lines has been reached yet
-                    if nlines is not None:
-                        if section_id >= nlines:
-                            break
-
-            # Bundle and return data set
-            return dict(section_list=pd.DataFrame(section_list), feature_mapping=pd.DataFrame(feature_section_mapping),
-                        feature_list=feature_list)
-
     # TODO: add tests, alterate file formats
-    def read_file_data(filename: str, nlines: int = None, start_line: int = 0) -> dict:
+    def read_file_data(self, filename: str, nlines: int = None, start_line: int = 0) -> dict:
         """
-        Reads in Santu's annotated files and records the explicit features and implicit features annotated in the file
+        Reads in un-annotated files expecting organization to be one document per line
 
-        ex. annotated_data = read_annotated_data(filename='demo_files/iPod.final', nlines=200)
-        ex. annotated_data = read_annotated_data(filename='demo_files/iPod.final', nlines=2)
+        Sentence tokenizer will take care of splitting documents into sentences
 
-        :param filename: Filename for the annotated data set
+        ex. parsed_data = read_file_data(filename='../tests/data/parse_and_model/oneLinePerDoc.txt', nlines=3)
+
+        :param filename: Filename for the un-annotated data set
         :param nlines: Maximum number of lines from the file to read or None to read all lines
         :param start_line: Optional parameter, specific line number to start at, mostly for testing purposes
         :return: a dictionary with the following data
@@ -352,22 +296,11 @@ class ParseAndModel:
                 section_id: integer id for the section
                 section_text: cleaned (lowercase, trimmed) section text
                 title: True if the line is a title, False otherwise
-            feature_section_mapping: DataFrame
-                | doc_id (int)  | feature (str) | is_explicit (bool)    | section_id (int)  |
-                doc_id: integer id for the document
-                feature: the string form of the feature in the annotation
-                is_explicit: False if the feature was marked in the annotation as an implicit mention, True otherwise
-                section_id: integer id for the section
-            feature_list: dictionary with each feature and the number of sections it appears in
-                key: feature name
-                value: number of sections in which the feature appears
         """
-
+        logging.info("Reading data from file: ", filename)
         doc_id = -1
         section_id = 0
         section_list = []
-        feature_section_mapping = []
-        feature_list = defaultdict(int)
         line_number = 0
 
         with open(filename, 'r') as input_file:
@@ -387,77 +320,69 @@ class ParseAndModel:
 
                 # Parse doc and split into sentences
                 # TODO: add a sentence tokenizer here
-                line_text=''
+                sentence_list = sent_tokenize(line)
+                for sentence in sentence_list:
+                    logging.debug(sentence)
 
-                # Add section line to data set
-                section_list.append(
-                    {"doc_id": doc_id, "section_id": section_id, "section_text": line_text})
+                    # Add section line to data set
+                    section_list.append(
+                        {"doc_id": doc_id, "section_id": section_id, "section_text": sentence})
 
-                # Increment section id
-                section_id += 1
-                # print(line)
+                    # Increment section id
+                    section_id += 1
+                    logging.debug(line)
 
                 # Check if max number of lines has been reached yet
                 if nlines is not None:
-                    if section_id >= nlines:
+                    if doc_id + 1 >= nlines:
                         break
 
         # Bundle and return data set
-        return dict(section_list=pd.DataFrame(section_list), feature_mapping=pd.DataFrame(feature_section_mapping),
-                    feature_list=feature_list)
-
-
+        return dict(section_list=pd.DataFrame(section_list))
 
     # TODO: Slow, needs to be optimized, unit tests need to be added
-    def build_explicit_models(self, remove_stopwords: bool = False,
-                              lemmatize_words: bool = True) -> dict:
+    def build_explicit_models(self, remove_stopwords: bool = True,
+                              lemmatize_words: bool = True,
+                              log_base: int = None) -> dict:
         """
         This function builds a background model, set of topic models and summarizes the counts of words in each sentence
             to prepare for EM optimization
 
-            ex. em_input = build_explicit_models(text_set=text_set, feature_set=feature_set)
-            ex. em_input = build_explicit_models(text_set = annotated_data["section_list"], feature_set = feature_list)
-
-        :param text_set: a pandas DataFrame with (at a minimum) the following columns
-        :param feature_set: output of format feature list - OR -
-            DataFrame with integer ids for each feature, synonyms are grouped together
-            | feature (str) | feature_id (int)  | feature_term_id (int)
-            feature: string representation of the feature
-            feature_id: integer id for the feature, will be the same for synonyms if input in nested list
-            feature_term_id: integer id for the feature, will be unique for each string, including synonyms
-        :param lemmatize_words: set to true if lemmatization should be performed on document sections before models are
+        :param remove_stopwords: Set to true if stop words should be removed from document sections before models are
             created
-        :param remove_stopwords: set to true if stop words should be removed from document sections before models are
+        :param lemmatize_words: Set to true if lemmatization should be performed on document sections before models are
             created
-        :return: a dictionary with seven entries -
+        :param log_base: Optional parameter to specify log base, defaults to ln if not set
+        :return: a dictionary with six entries -
             model_background: background model estimated from the entire document collection as described in section 4.2
+            model_feature: feature models estimated from explicit mention sections as described in section 4.2
             model_background_matrix: background model estimated from the entire document collection as described in
-                section 4.2 in array form as follows:
+                section 4.2 in dense ndarray form as follows:
                 Word           | Background probability
                 ----------------------------------------
-                word 1         |   bp_1
+                word 1         |   p(w1 | B)
                 ...        ... |   ...
-                word |V|        |   bp_|V|
-            model_feature: feature models estimated from explicit mention sections as described in section 4.2
+                word v         |   p(wv | B)
             model_feature_matrix: feature models estimated from explicit mention sections as described in section 4.2 in
-                array form as follows:
-                Word/Feature    | Feature 1   ...     ...     Feature |f|=k
-                -----------------------------------------------------------
-                word 1         | p(w1 | f1) ...      ...    p(w1 | fk)
-                ...        ...             ....            ...     ...
-                word nw        | p(w_|V|, fk) ... ....   tm(w_|V|, fk)
-            section_word_counts_matrix: word counts in each section in matrix form as needed by the EM alg as follows:
-                Section/Word | word 1 ... ... ... ... word |V|
-                ----------------------------------------------------------
-                Section 1    | count(s_1,w_1) ... ...  count(s_1, w_|V|)
-                Section 2    | count(s_2,w_1) ... ...  count(s_2, w_|V|)
+                dense ndarray form as follows:
+                Word/feature    | feature 1 ...     ...     feature k
+                -----------------------------------------------------
+                word 1         | p(w1 | f1) ...     ...     p(w1 | fk)
+                ...        ...              ...            ...     ...
+                word v         | p(wv | fk) ...     ...     p(wv | fk)
+            section_word_counts_matrix: sparse csr matrix with word counts in each section as needed by the EM alg as
+                follows:
+                Section/Word | word 1 ... ... ... ... word v
+                ---------------------------------------------------
+                Section 1    | count(s_1,w_1) ... ...  count(s_1, w_v)
+                Section 2    | count(s_2,w_2) ... ...  count(s_2, w_v)
                 ...    ...     ... ...     ...     ...     ...
-                Section m    | count(s_m, w_1)... ...  count(s_m, w_|V|)
+                Section m    | count(s_m, w_1)... ...  count(s_m, w_v)
             vocabulary_lookup: a dictionary with
                 key: word id used in models, matrices, etc.
                 value: actual word
         """
-        logging.warning(" Building explicit models")
+        logging.info("Building explicit models.")
         text_set = self.parsed_text["section_list"]
         feature_set = self.formatted_feature_list
 
@@ -486,16 +411,18 @@ class ParseAndModel:
         # loop over all rows in input data set
         for index, row in text_set.iterrows():
             # print the current text for debugging
-            # print(str(row["section_id"]) + ": " + row["section_text"])
+            logging.debug(str(row["section_id"]) + ": " + row["section_text"])
 
             # input the sentence into Spacy
             section = section_list[index]  # nlp(row["section_text"])
 
             # add each parsed word into a list
-            # Note: won't catch capitalized stopwords, need to lowercase as part of pre-processing - also possible stop word
-            # filtering not necessary because of tfidf term in topic model?
             current_section_words = []
             for word in section:
+                if word.lower_.strip() == '':
+                    continue
+
+                # convert word to lowercase, strip stop words and lemmatize if requested
                 if (not word.is_stop or not remove_stopwords) and not word.is_punct:
                     cleaned_word = word.lemma_ if (word.lemma_ != '-PRON-' and lemmatize_words) else word.lower_
                     current_section_words.append(cleaned_word)
@@ -528,7 +455,7 @@ class ParseAndModel:
 
                 # word was found in the section, record find and add words to feature topic model
                 if row_f["feature"] in current_section_words:
-                    # print("feature " + str(row_f["feature_id"]))
+                    logging.debug("feature " + str(row_f["feature_id"]))
 
                     if row_f["feature_id"] in found_features:
                         # already found explicit feature mention in sentence as synonym, skip
@@ -541,10 +468,10 @@ class ParseAndModel:
                     feature_section_mapping.append({"section_id": row["section_id"], "feature_id": row_f["feature_id"]})
 
                     # if we only count each word once
-                    feature_word_counter[row_f["feature_id"]].update(current_section_word_counts.keys())
+                    # feature_word_counter[row_f["feature_id"]].update(current_section_word_counts.keys())
 
-                    # if we count each words as many times as it occurs
-                    # featureCounter[row_f["feature_id"]].update(current_section_words)
+                    # if we count each words as many times as it occurs (consistent with Santu's code)
+                    feature_word_counter[row_f["feature_id"]].update(current_section_words)
 
         # At this point we have all the counts we need to build the topic models
 
@@ -572,21 +499,23 @@ class ParseAndModel:
 
         # count of sentences
         section_count = len(section_word_list)
-        # num_words = len(collection_word_counts)
 
         for word in collection_word_counts.keys():
-            # print(word)
 
             for current_feature in unique_feature_ids:
-                # print(str(index) + "-" + row["feature"])
 
-                ##########################################################################
-                # Formula 4, section 4.2, using base 2 logs, also adds +1 from Formula 5
-                #########################################################################
-                tfidf = math.log(1 + feature_word_counter[current_feature][word], 2) \
-                        * math.log(1 + section_count / word_section_counter[word], 2) \
-                        + 1
-                # print(str(tfidf))
+                #######################################################################################################
+                # Formula 4, section 4.2, using base e logs by default but can be changed, also adds +1 from Formula 5
+                #######################################################################################################
+                if log_base is None:
+                    tfidf = math.log(1 + feature_word_counter[current_feature][word]) \
+                            * math.log(1 + section_count / word_section_counter[word]) \
+                            + 1
+                else:
+                    tfidf = math.log(1 + feature_word_counter[current_feature][word], log_base) \
+                            * math.log(1 + section_count / word_section_counter[word], log_base) \
+                            + 1
+                logging.debug(str(tfidf))
 
                 tfidf_feature[current_feature][word] = tfidf
 
@@ -596,24 +525,24 @@ class ParseAndModel:
         model_feature = []
 
         for index in feature_set["feature_id"].unique():
-            # print("normalizing " + str(index))
+            logging.debug("normalizing " + str(index))
 
             #########################################################################################################
-            # Formula 5, section 4.2, using base 2 logs, +1 in numerator already taken care of in tfidf calculation
+            # Formula 5, section 4.2, using base e logs by default, +1 in numerator already taken care of in tfidf calculation
             #########################################################################################################
             model_feature.append([])
             for word, word_id in vocabulary.items():
-                # print(word + ":" + str(word_id))
+                logging.debug(word + ":" + str(word_id))
                 model_feature[index].append(tfidf_feature[index][word] / (model_feature_norms[index]))
 
         # translate section word counts into matrix for EM
         section_word_counts_matrix = np.zeros(shape=(section_count, vocabulary_size))
         for section, word_list in section_word_counts.items():
-            # print(section)
+            logging.debug(section)
             for word, word_count in word_list.items():
                 # look up current word
                 word_id = vocabulary[word]
-                # print(str(word_id) + ":" + word)
+                logging.debug(str(word_id) + ":" + word)
                 section_word_counts_matrix[section, word_id] = word_count
 
         # translate models into matrices for EM
@@ -624,12 +553,10 @@ class ParseAndModel:
         vocabulary_lookup = {v: k for k, v in vocabulary.items()}
 
         # Save model results to object
-        # TODO: [nfr] remove this from here, return feature_df and make assignment in __init__
-        self.model_results = dict(model_background=model_background, model_feature=model_feature,
-                             section_word_counts_matrix=csr_matrix(section_word_counts_matrix),
-                             model_background_matrix=model_background_matrix, model_feature_matrix=model_feature_matrix,
-                             vocabulary_lookup=vocabulary_lookup)
-
+        return dict(model_background=model_background, model_feature=model_feature,
+                    section_word_counts_matrix=csr_matrix(section_word_counts_matrix),
+                    model_background_matrix=model_background_matrix, model_feature_matrix=model_feature_matrix,
+                    vocabulary_lookup=vocabulary_lookup)
 
     # TODO: Try metapy impelementation (should mostly be a swap of the NLP call)
     def build_explicit_models_metapy(text_set: pd.DataFrame, feature_set: pd.DataFrame,
@@ -742,23 +669,11 @@ if __name__ == '__main__':
     print("CWD:", os.getcwd())
     start_time = time.time()
 
-    pm = ParseAndModel()
+    print("Calling ParseAndModel...")
+    pm = ParseAndModel(feature_list=["sound", "battery", ["screen", "display"]],
+                       filename='../tests/data/parse_and_model/iPod.final')
 
-
-    # TODO: [nfr] Document this workflow
-    print("formatting feature list")
-    pm.feature_list = ["sound", "battery", ["screen", "display"]]
-    pm.format_feature_list()
-    #feature_list = ParseAndModel.format_feature_list(feature_list=["sound", "battery", ["screen", "display"]])
-
-    print("reading annotated data")
-    pm.read_annotated_data(filename='../tests/data/parse_and_model/iPod.final', nlines=500)
-    #annotated_data = ParseAndModel.(filename='demo_files/iPod.final', nlines=500)
-
-    print("parsing text and building explicit feature models: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-    pm.build_explicit_models()
-    #em_input = pm.build_explicit_models(text_set=annotated_data["section_list"], feature_set=feature_list)
-    print("parsing text and building explicit feature models: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    print(pm.model_results)
 
     end_time = time.time()
     print("Elapsed: {} seconds".format(round(end_time - start_time, 4)))

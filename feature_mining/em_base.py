@@ -29,7 +29,7 @@ class ExpectationMaximization:
         # Parameters related to collection size
         self.m = 0
         self.v = 0
-        self.f = 0
+        self.k = 0
 
         # Parameters computed from collection
         self.reviews = None
@@ -40,6 +40,8 @@ class ExpectationMaximization:
         self.hidden_parameters = None
         self.hidden_parameters_background = None
         self.pi = None
+
+        self.pi_delta = None
 
     def import_data(self):
         """
@@ -74,7 +76,8 @@ class ExpectationMaximization:
             self.m_step()
             end_time_iteration = time.time()
             print("Elapsed on iteration: {} seconds".format(round(end_time_iteration - start_time_iteration, 4)))
-            if self.compute_cost() < self.delta_threshold:
+            self.pi_delta = self.compute_cost()
+            if self.pi_delta < self.delta_threshold:
                 print("Under change threshold, terminating")
                 break
             if self.max_iter==0:

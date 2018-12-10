@@ -1,55 +1,60 @@
 import numpy as np
 from scipy.sparse import csr_matrix
 from feature_mining.em_base import ExpectationMaximization
-from feature_mining import parse_and_model
 from feature_mining import ParseAndModel
 from datetime import datetime
 import os
 import logging
 
+
 class EmVectorByFeature(ExpectationMaximization):
     """
-    Vectorized implementation of EM algorithm.
+    Vectorized implementation of EM algorithm. Loops over features.
     """
 
-    def __init__(self, dump_path="../tests/data/em_01/", explicit_model: ParseAndModel=None, lambda_background: float=0.7, max_iter: int=50, delta_threshold: float=1e-6):
-        print(type(self).__name__, '- init...')
-        ExpectationMaximization.__init__(self, dump_path=dump_path)
+    def __init__(self,  explicit_model: ParseAndModel = None,
+                 lambda_background: float = 0.7, max_iter: int = 50, delta_threshold: float = 1e-6, pi_init=None):
+        """
+        Constructor for EM class (looping by feature)
+
+        :param explicit_model: ParseAndModel object containing topic models, background model and word counts
+        :param lambda_background: Assumed P( background model) - probabilitiy that a word comes from the background distribution
+        :param max_iter: Maximum number of EM iterations to run if delta threshold is not reached
+        :param delta_threshold: Delta Pi threshold at which the EM algorithm will terminate
+        :param pi_init: Optional parameter to specify a specific parameter initialization for testing/debugging
+        """
+
+        logging.info(type(self).__name__, '- init...')
+        ExpectationMaximization.__init__(self, dump_path=None)
 
         # User set parameters
         self.max_iter = max_iter
         self.lambda_background = lambda_background
         self.delta_threshold = delta_threshold
+        self.pi_init = pi_init
 
-        # Parameters for matrix result interpretation
-        self.features_map = {}
-        self.words_map = {}
-        self.words_list = {}
-
-        # TODO: one more optimization place
-        self.topic_model_sentence_matrix = None
-        self.iv = None  # identity array of v size
-
-        # TODO: Remove these after testing validated
-        # Parameters for temporary import transformation
-        self.reviews_matrix = np.array([])
         self.pi_matrix = np.array([])
-        self.topic_model_matrix = ()
-        self.reviews_binary = np.array([])
         self.previous_pi_matrix = None
-        self.expose_sentence_sum_for_testing = None
-        self.denom = 0.0
-        self.nom = 0.0
-        self.m_sum = None
+        self.reviews_binary = np.array([])
+        self.hidden_parameters_background_estep = None
+
+        self.explicit_model = None
+        self.m = None
+        self.v = None
+        self.k = None
+
+        self.reviews_matrix = None
+        self.topic_model = None
+        self.background_probability = None
 
         # if explicit model exists initialize class variables, else skip
         if explicit_model is not None:
-            self.explicit_model=explicit_model
+            self.explicit_model = explicit_model
 
             # Parameters related to collection size
             self.m = explicit_model.model_results["section_word_counts_matrix"].shape[0]
             self.v = explicit_model.model_results["section_word_counts_matrix"].shape[1]
-            self.f = explicit_model.model_results["model_feature_matrix"].shape[1]
+            self.k = explicit_model.model_results["model_feature_matrix"].shape[1]
 
             # Parameters computed from collection
             self.reviews_matrix = explicit_model.model_results["section_word_counts_matrix"]
@@ -61,31 +66,18 @@ class EmVectorByFeature(ExpectationMaximization):
         else:
             logging.warning("Parse and model output was not included as an argument and will need to be set manually")
 
-    def import_data(self, explicit_model: ParseAndModel=None):
+    def import_data(self, explicit_model: ParseAndModel = None):
         """
-        Needed data structures could be further transformed here.
+        Takes a ParseAndModel object and saves the data for EM algorithm use
 
-        Input:
-            please see import_data_temporary (for now)
-        Output:
-            - self.reviews_matrix: matrix representation of Reviews
-            - self.topic_model_matrix: matrix representation of TopicModel
-            - self.pi_matrix: matrix representation of PI
-            - self.m: number of sections (sentences)
-            - self.v: number of words in vocabulary
-            - self.f: number of features/aspects
-            - self.iv: identity vector of b length
-            - self.features_map: used for testing - maps features to id-s
-            - self.words_map: used for testing - maps words to id-s
-            - self.words_list: list of words (inverse of words_map)
-            - self.background_probability = background_probability_vector
-        :return:
+        :param explicit_model: A ParseAndModel object containing the necessary information for EM calculations
+        :return: None
         """
         self.explicit_model = explicit_model
 
         self.m = explicit_model.model_results["section_word_counts_matrix"].shape[0]
         self.v = explicit_model.model_results["section_word_counts_matrix"].shape[1]
-        self.f = explicit_model.model_results["model_feature_matrix"].shape[1]
+        self.k = explicit_model.model_results["model_feature_matrix"].shape[1]
 
         # Parameters computed from collection
         self.reviews_matrix = explicit_model.model_results["section_word_counts_matrix"]
@@ -94,168 +86,71 @@ class EmVectorByFeature(ExpectationMaximization):
 
         logging.info("Explicit model has been imported - algorithm can be started")
 
-    def import_data_temporary(self):
+    def initialize_parameters(self, pi_init: np.ndarray = None):
         """
-        Transforms data read from a snapshot of Santu's data, after 1 execution of E-M steps.
-        Input:
-        - Reviews.npy: np dump of the Reviews structure
-        - TopicModel.npy: np dump of TopicModel
-        - BackgroundProbability: np dump of BackgroundProbability
-        - HP: np dump of hidden parameters
-        - PI: np dump of pi (important for testing purposes, since this is randomly generated)
-        :return:
+        Initialize data for EM
+
+        :param pi_init: Optional parameter to specify a specific parameter initialization for testing/debugging
+        :return: None
         """
-        # TODO: this should be deleted once the implementation is safe
-        print(type(self).__name__, '- import data ********temporary********...')
-        self.reviews = np.load(self.dump_path + "Reviews.npy")
-        self.topic_model = np.load(self.dump_path + 'TopicModel.npy').item()
-        self.background_probability = np.load(self.dump_path + 'BackgroundProbability.npy').item()
-        self.hidden_parameters = np.load(self.dump_path + "HP.npy")
-        self.hidden_parameters_background = np.load(self.dump_path + "HPB.npy")
-        self.pi = np.load(self.dump_path + "PI.npy")
 
-        """
-        Prepare data for testing vectorised solution.
-        Want to convert the photo of Santu's data for vectorised needs.
-        :return:
-        """
-        m = 0   # number of sentences (lines) in all reviews - 8799
-        nw = 0  # number of words in vocabulary - 7266
-        na = 0  # number of aspects - 9
+        logging.info(type(self).__name__, '- initialize parameters...')
 
-        for reviewNum in range(0, len(self.reviews)):
-            for lineNum in range(0, len(self.reviews[reviewNum])):
-                m += 1
-        for feature in self.topic_model:
-            na += 1
-
-        words_dict = {}
-        for feature in self.topic_model.keys():
-            for word in self.topic_model[feature]:
-                words_dict[word] = True
-        nw = len(words_dict.keys()) # 7266
-        word_list = sorted(words_dict.keys())
-        words_map = {}
-        for word_id in range(0, len(word_list)):
-            words_map[word_list[word_id]] = word_id
-
-        # initialize reviews with zeros
-        reviews_matrix = np.zeros(m * nw).reshape(m, nw)
-
-        # construct the review matrix with count values for each words
-        section_id = 0
-        for reviewNum in range(0, len(self.reviews)):
-            for lineNum in range(0, len(self.reviews[reviewNum])):
-                for word in self.reviews[reviewNum][lineNum]:
-                    reviews_matrix[section_id][words_map[word]] = self.reviews[reviewNum][lineNum][word]
-                section_id += 1
-
-        # construct the feature map
-        current_feature = 0
-        features_map = {}
-        for one_feature in sorted(self.pi[0][0].keys()):
-            features_map[one_feature] = current_feature
-            current_feature += 1
-
-        # initialize pi
-        section_id = 0
-        pi_matrix = np.zeros(m * na).reshape(m, na)
-        for reviewNum in range(0, len(self.reviews)):
-            for lineNum in range(0, len(self.reviews[reviewNum])):
-                for feature in self.pi[reviewNum][lineNum]:
-                    pi_matrix[section_id][features_map[feature]] = self.pi[reviewNum][lineNum][feature]
-                section_id += 1
-
-        # initialize topic model with zeros
-        topic_model_matrix = np.zeros(nw * na).reshape(nw, na)
-        for feature in self.topic_model:
-            for word in self.topic_model[feature]:
-                topic_model_matrix[words_map[word]][features_map[feature]] = self.topic_model[feature][word]
-
-        # initialize hidden parameters for background
-        self.words_map = words_map
-        background_probability_vector = np.zeros(nw).reshape(nw, 1)
-        for k, v in self.background_probability.items():
-            background_probability_vector[self.words_map[k]] = v
-        background_probability_vector = background_probability_vector.squeeze()
-
-        # update class parameters with matrices
-        # TODO: clean this up to use only one set of input data
-        self.reviews_matrix = reviews_matrix
-        self.topic_model_matrix = topic_model_matrix
-        self.pi_matrix = pi_matrix
-        self.m = m
-        self.v = nw
-        self.f = na
-        self.iv = np.ones(self.v).reshape(self.v, 1).T
-        self.features_map = features_map
-        self.words_map = words_map
-        self.words_list = word_list
-        self.background_probability = background_probability_vector.reshape(self.v, 1)
-
-    def initialize_parameters(self):
-        """
-        Initialize helper parameters for E-M.
-
-        :return:
-            - reviews_binary: binary matrix of reviews_matrix (1 wherever count>0)
-            - hidden_parameters: 0-matrix of hidden parameters
-            - hidden_parameters_background: 0-matrix of h.p. background
-            - pi_matrix: random dirichlet initialization (DEACTIVATED MOMENTARILY)
-        """
-        print(type(self).__name__, '- initialize parameters...')
+        # Pull pi initialization from object if not in argument
+        if pi_init is None:
+            pi_init = self.pi_init
 
         # Compute binary reviews matrix (1 if word in sentence, 0 if not) (same dimensions as reviews)
         self.reviews_binary = self.reviews_matrix.sign()
 
         # Compute sparse matrix
-        #self.reviews_matrix = csr_matrix(self.reviews_matrix)
-        #self.reviews_binary = csr_matrix(self.reviews_binary)
+        # self.reviews_matrix = csr_matrix(self.reviews_matrix)
+        # self.reviews_binary = csr_matrix(self.reviews_binary)
 
         # Initialize hidden_parameters
         self.hidden_parameters = []
         hidden_parameters_one_feature = csr_matrix((self.m, self.v))
-        for feature in range(0, self.f):
+        for feature in range(0, self.k):
             self.hidden_parameters.append(hidden_parameters_one_feature)
 
         # Initialize hidden_parameters_background
         self.hidden_parameters_background = csr_matrix((self.m, self.v))
 
         # Calculate E-step background hidden parameter numerator - this won't change throughout the process
-        self.hidden_parameters_background_estep = self.reviews_binary.multiply(self.lambda_background).multiply(self.background_probability)
+        self.hidden_parameters_background_estep = self.reviews_binary.multiply(self.lambda_background).multiply(
+            self.background_probability)
 
-        # Compute topic model for sentence as review_binary[sentence_s]^T * topic_model
-        # TODO: extract this initialization in initialize_parameters and OPTIMIZE, OPTIMIZE
-        # self.topic_model_sentence_matrix = []#((self.m, self.v, self.f))
-        # for sentence in range(0, self.m):
-        #    self.topic_model_sentence_matrix.append(csr_matrix(
-        #        self.reviews_binary[sentence].reshape(self.v, 1).multiply(self.topic_model_matrix)))
+        # Check if an initialization was specified and use if so
+        if pi_init is not None:
+            self.pi_matrix = pi_init
+        else:
+            # Generates equal weight initialization for testing
+            # if False:
+            #    self.pi_matrix = np.full((self.m, self.f), 1/self.f)
 
-        # TODO disable when testing is done - currently starting with even weights
-        if False:
-            self.pi_matrix = np.full((self.m, self.f), 1/self.f)
-
-        # TODO: enable this code when ready to generate random pi-s
-        if True:
-            self.pi_matrix = np.random.dirichlet(np.ones(self.f), self.m)
+            # Generates random initialization
+            if True:
+                self.pi_matrix = np.random.dirichlet(np.ones(self.k), self.m)
 
     def e_step(self):
         """
          Vectorized e-step.
 
-         :return:
+         Estimates value of hidden parameters based on current pi parameters
+
+         :return: None
         """
-        print(type(self).__name__, '- e_step...')
+        logging.info(type(self).__name__, '- e_step...')
 
-        # TODO: after testing, change 1 to k (to treat all features)
-        for feature in range(0, self.f):  # TODO: replace with 'f' (now not needed)
-            print(30 * '*', "E-Step Start feature:", feature, ' ', 30 * '*')
+        hidden_param_sum = 0
+        for feature in range(0, self.k):
+            logging.info(30 * '*', "E-Step Start feature:", feature, ' ', 30 * '*')
 
-            pi_topic = np.dot(self.pi_matrix[:,feature,np.newaxis], self.topic_model[np.newaxis, :, feature])
+            pi_topic = np.dot(self.pi_matrix[:, feature, np.newaxis], self.topic_model[np.newaxis, :, feature])
 
             self.hidden_parameters[feature] = self.reviews_binary.multiply(pi_topic)
 
-            if feature==0:
+            if feature == 0:
                 # First loop, initialze sum
                 hidden_param_sum = self.hidden_parameters[feature]
             else:
@@ -263,45 +158,48 @@ class EmVectorByFeature(ExpectationMaximization):
                 hidden_param_sum += self.hidden_parameters[feature]
 
         # Calculate denominator for background hidden parameters
-        hidden_background_denom = self.hidden_parameters_background_estep + hidden_param_sum.multiply(1-self.lambda_background)
+        hidden_background_denom = self.hidden_parameters_background_estep + hidden_param_sum.multiply(
+            1 - self.lambda_background)
 
         # Normalize hidden background parameters
-        self.hidden_parameters_background = self.hidden_parameters_background_estep.multiply(hidden_background_denom.power(-1))
+        self.hidden_parameters_background = self.hidden_parameters_background_estep.multiply(
+            hidden_background_denom.power(-1))
 
         # take element-wise sum hidden feature params ^ -1 so we can divide instead of multiplying
         hidden_param_sum = hidden_param_sum.power(-1)
 
         # Normalize hidden parameters for each feature
-        for feature in range(0, self.f):
-            print(30 * '*', "E-Step Start feature normalization:", feature, ' ', 30 * '*')
+        for feature in range(0, self.k):
+            logging.info(30 * '*', "E-Step Start feature normalization:", feature, ' ', 30 * '*')
 
             self.hidden_parameters[feature] = self.hidden_parameters[feature].multiply(hidden_param_sum)
 
-
-
     def m_step(self):
         """
-                 Vectorized e-step.
+        Vectorized m-step.
 
-                 :return:
-                """
-        print(type(self).__name__, '- m_step...')
+        Re-estimates parameters based on current hidden parameter values
+
+         :return: None
+        """
+        logging.info(type(self).__name__, '- m_step...')
 
         self.previous_pi_matrix = self.pi_matrix.copy()
 
         # Calculate non-feature dependent portion of m-step numerator: c(w,s) (1-P(z_sw = B))
         multiplier = self.hidden_parameters_background.multiply(-1)
-        multiplier.data -= 1
+        multiplier.data += 1
         multiplier = self.reviews_matrix.multiply(multiplier)
 
         # For each feature calculate numerator
-        for feature in range(0, self.f):
-            print(30 * '*', "M-step start pi calculation:", feature, ' ', 30 * '*')
+        pi_sums = 0
+        for feature in range(0, self.k):
+            logging.info(30 * '*', "M-step start pi calculation:", feature, ' ', 30 * '*')
 
             new_pi = multiplier.multiply(self.hidden_parameters[feature]).sum(axis=1)
 
             # keep running total for denominator
-            if feature==0:
+            if feature == 0:
                 # if first feature initialize
                 self.pi_matrix = new_pi
                 pi_sums = new_pi
@@ -316,11 +214,19 @@ class EmVectorByFeature(ExpectationMaximization):
         self.pi_matrix = np.multiply(self.pi_matrix, np.power(pi_sums, -1))
 
     def compute_cost(self):
-        print(type(self).__name__, '- compute cost...')
-        # TODO: fix distance formula
-        delta = np.subtract(self.pi_matrix, self.previous_pi_matrix)
+        """
+        Calculates the amount of change between the last iteration's pi parameter values and the current iteration's pi
+        parameter values for comparison to the delta threshold.
 
-        return np.max(np.positive(delta))
+        Total change is calculated as the sum of the squared differences between the two sets of parameters.
+
+        :return:
+        """
+        logging.info(type(self).__name__, '- compute cost...')
+
+        delta = np.square(np.subtract(self.pi_matrix, self.previous_pi_matrix))
+
+        return delta.sum()
 
 
 if __name__ == '__main__':
@@ -330,62 +236,64 @@ if __name__ == '__main__':
 """
     * Notation:
             v = number of words in vocabulary
-            m  = number of sentences (lines) in all reviews
-            f = number of features
+            m  = number of sections (lines) across all documents
+            k = number of features
+            
+            Note: Python is zero indexed, but for simplicity of explanation we use 1-indexing here
     
-    * Review matrix:
-            Sentence/Word | word 1 ... ... ... ... word v
+    * Section word counts matrix (Sparse)
+            Section/Word | word 1 ... ... ... ... word v
             ---------------------------------------------------
-            Sentence 1    | count(s_1,w_1) ... ...  count(s_1, w_v)
-            Sentence 2    | count(s_2,w_2) ... ...  count(s_2, w_v)
+            Section 1    | count(s_1,w_1) ... ...  count(s_1, w_v)
+            Section 2    | count(s_2,w_2) ... ...  count(s_2, w_v)
             ...    ...     ... ...     ...     ...     ...
-            Sentence m    | count(s_m, w_1)... ...  count(s_m, w_v)
+            Section m    | count(s_m, w_1)... ...  count(s_m, w_v)
     
-    * Topic model
-            Word/feature    | feature 1   ...     ...     feature na
+    * Topic model (Dense)
+            Word/feature    | feature 1 ...     ...     feature k
             -----------------------------------------------------
-            word 1         | tm(w1,a1) ...      ...    tm(w1, a_na)
-            ...        ...             ....            ...     ...
-            word v        | tm(w_v, a_na) ... ....   tm(w_na, a_na)
+            word 1         | p(w1 | f1) ...     ...     p(w1 | fk)
+            ...        ...              ...            ...     ...
+            word v         | p(wv | fk) ...     ...     p(wv | fk)
     
-    * Background probability
+    * Background probability (Dense)
             Word           | Background probability
             ----------------------------------------
-            word 1         |   bp_1
+            word 1         |   p(w1 | B)
             ...        ... |   ...
-            word v        |   bp_v
+            word v         |   p(wv | B)
     
-    * PI
-            Sentence/feature | feature 1 ...      ...    feature na
+    * PI (Dense)
+            Section/feature | feature 1 ...      ...    feature k
             -----------------------------------------------------
-            Sentence 1      | pi(s1,a1)  ...   ...     pi(s1, a_na)
+            Section 1       | pi(s1,f1)  ...   ...     pi(s1, fk)
             ...        ...             ....            ...     ...
-            Sentence m      | pi(sm,a1)  ...   ...     pi(sm, a_na)
+            Section m       | pi(sm,f1)  ...   ...     pi(sm, fk)
     
-    * Hidden parameters (list of one sparse matrix for each sentence)
-        - [0]:
-            Word / feature | feature 1 ... ... ... ... feature f
-            ---------------------------------------------------
-            word 1        | 0.0         ...         ...   0.0
-            word 2        | 0.0         ...         ...   0.0
-            ...    ...    |         ...     ...     ...
-            word v       | 0.0    ...              ...   0.0
+    * Hidden parameters (list of one sparse matrix for each feature)
+        - [1]:
+            section / word    | word 1 ... ... ... ... word v
+            --------------------------------------------------------
+            section 1         | p(z 1, 1 = 1)  ...     p(z 1, v = 1)
+            section 2         | p(z 2, 1 = 1)  ...     p(z 2, v = 1)
+            ...    ...        |         ...    ...     ...
+            section m         | p(z m, 1 = 1)  ...     p(z m, v = 1)
             
         - [...]:
             ... ... ... 
-        - [m]: 
-            Word / feature | feature 1 ... ... ... ... feature f
-            ---------------------------------------------------
-            word 1        | 0.0         ...         ...   0.0
-            word 2        | 0.0         ...         ...   0.0
-            ...    ...    |         ...     ...     ...
-            word v       | 0.0    ...              ...   0.0
+        - [k]: 
+            section / word    | word 1 ... ... ... ... word v
+            --------------------------------------------------------
+            section 1         | p(z 1, 1 = k)  ...     p(z 1, v = k)
+            section 2         | p(z 2, 1 = k)  ...     p(z 2, v = k)
+            ...    ...        |         ...    ...     ...
+            section m         | p(z m, 1 = k)  ...     p(z m, v = k)
 
-    * Hidden parameters background
-            Sentence/Word | word 1 ... ... ... ... word v
-            ---------------------------------------------------
-            Sentence 1    | 0.0        ...     ...   0.0
-            Sentence 2    | 0.0    ...         ...   0.0
-            ...    ...     ... ...     ...     ...   ...
-            Sentence m    | 0.0 ...             ...  0.0
+    * Hidden parameters background (sparse)
+            section / word    | word 1 ... ... ... ...  word v
+            --------------------------------------------------------
+            section 1         | p(z 1, 1 = B)  ...     p(z 1, v = B)
+            section 2         | p(z 2, 1 = B)  ...     p(z 2, v = B)
+            ...    ...        |         ...    ...     ...
+            section m         | p(z m, 1 = B)  ...     p(z m, v = B)
 """

@@ -92,15 +92,12 @@ class ParseAndModel:
         # loop through list of features
         for feature in feature_list:
             if isinstance(feature, str):
-                # print("string")
                 formatted_feature_list.append(
                     {"feature_term_id": feature_term_index, "feature_id": feature_index, "feature": feature})
                 feature_term_index += 1
             elif isinstance(feature, list):
-                # print('list')
                 for synonym in feature:
                     if isinstance(synonym, str):
-                        # print('>string')
                         formatted_feature_list.append(
                             {"feature_term_id": feature_term_index, "feature_id": feature_index, "feature": synonym})
                         feature_term_index += 1
@@ -191,17 +188,17 @@ class ParseAndModel:
 
                 # Look for feature annotations attached to the line
                 feature_string = line.split('##')[0].split(',')
-                # print(feature_string)
+                logging.debug(feature_string)
                 if not is_title and feature_string[0] != '':
 
                     # Loop through all the features found in the annotation
                     for feature in feature_string:
-                        # print(feature)
+                        logging.debug(feature)
 
                         # Check if the feature in the annotation is marked as an implicit mention
                         if '[u]' in feature:
                             explicit_feature = False
-                            # print('implicit')
+                            logging.debug('implicit')
                         else:
                             explicit_feature = True
 
@@ -233,7 +230,7 @@ class ParseAndModel:
                 # Increment section id
                 section_id += 1
                 line_count += 1
-                # print(line)
+                logging.debug(line)
 
                 # Check if max number of lines has been reached yet
                 if nlines is not None:
@@ -316,17 +313,17 @@ class ParseAndModel:
 
                 # Look for feature annotations attached to the line
                 feature_string = line.split('##')[0].split(',')
-                # print(feature_string)
+                logging.debug(feature_string)
                 if not is_title and feature_string[0] != '':
 
                     # Loop through all the features found in the annotation
                     for feature in feature_string:
-                        # print(feature)
+                        logging.debug(feature)
 
                         # Check if the feature in the annotation is marked as an implicit mention
                         if '[u]' in feature:
                             explicit_feature = False
-                            # print('implicit')
+                            logging.debug('implicit')
                         else:
                             explicit_feature = True
 
@@ -347,7 +344,7 @@ class ParseAndModel:
 
                 # Increment section id
                 section_id += 1
-                # print(line)
+                logging.debug(line)
 
                 # Check if max number of lines has been reached yet
                 if nlines is not None:
@@ -419,7 +416,7 @@ class ParseAndModel:
 
                 # Increment section id
                 section_id += 1
-                # print(line)
+                logging.debug(line)
 
                 # Check if max number of lines has been reached yet
                 if nlines is not None:
@@ -501,7 +498,7 @@ class ParseAndModel:
         # loop over all rows in input data set
         for index, row in text_set.iterrows():
             # print the current text for debugging
-            # print(str(row["section_id"]) + ": " + row["section_text"])
+            logging.debug(str(row["section_id"]) + ": " + row["section_text"])
 
             # input the sentence into Spacy
             section = section_list[index]  # nlp(row["section_text"])
@@ -545,7 +542,7 @@ class ParseAndModel:
 
                 # word was found in the section, record find and add words to feature topic model
                 if row_f["feature"] in current_section_words:
-                    # print("feature " + str(row_f["feature_id"]))
+                    logging.debug("feature " + str(row_f["feature_id"]))
 
                     if row_f["feature_id"] in found_features:
                         # already found explicit feature mention in sentence as synonym, skip
@@ -605,7 +602,7 @@ class ParseAndModel:
                     tfidf = math.log(1 + feature_word_counter[current_feature][word], log_base) \
                             * math.log(1 + section_count / word_section_counter[word], log_base) \
                             + 1
-                # print(str(tfidf))
+                logging.debug(str(tfidf))
 
                 tfidf_feature[current_feature][word] = tfidf
 
@@ -615,24 +612,24 @@ class ParseAndModel:
         model_feature = []
 
         for index in feature_set["feature_id"].unique():
-            # print("normalizing " + str(index))
+            logging.debug("normalizing " + str(index))
 
             #########################################################################################################
             # Formula 5, section 4.2, using base e logs by default, +1 in numerator already taken care of in tfidf calculation
             #########################################################################################################
             model_feature.append([])
             for word, word_id in vocabulary.items():
-                # print(word + ":" + str(word_id))
+                logging.debug(word + ":" + str(word_id))
                 model_feature[index].append(tfidf_feature[index][word] / (model_feature_norms[index]))
 
         # translate section word counts into matrix for EM
         section_word_counts_matrix = np.zeros(shape=(section_count, vocabulary_size))
         for section, word_list in section_word_counts.items():
-            # print(section)
+            logging.debug(section)
             for word, word_count in word_list.items():
                 # look up current word
                 word_id = vocabulary[word]
-                # print(str(word_id) + ":" + word)
+                logging.debug(str(word_id) + ":" + word)
                 section_word_counts_matrix[section, word_id] = word_count
 
         # translate models into matrices for EM

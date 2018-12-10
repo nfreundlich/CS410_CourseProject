@@ -13,7 +13,7 @@ class EmVectorByFeature(ExpectationMaximization):
     """
 
     def __init__(self,  explicit_model: ParseAndModel = None,
-                 lambda_background: float = 0.7, max_iter: int = 50, delta_threshold: float = 1e-6):
+                 lambda_background: float = 0.7, max_iter: int = 50, delta_threshold: float = 1e-6, pi_init=None):
         """
         Constructor for EM class (looping by feature)
 
@@ -21,6 +21,7 @@ class EmVectorByFeature(ExpectationMaximization):
         :param lambda_background: Assumed P( background model) - probabilitiy that a word comes from the background distribution
         :param max_iter: Maximum number of EM iterations to run if delta threshold is not reached
         :param delta_threshold: Delta Pi threshold at which the EM algorithm will terminate
+        :param pi_init: Optional parameter to specify a specific parameter initialization for testing/debugging
         """
 
         logging.info(type(self).__name__, '- init...')
@@ -30,6 +31,7 @@ class EmVectorByFeature(ExpectationMaximization):
         self.max_iter = max_iter
         self.lambda_background = lambda_background
         self.delta_threshold = delta_threshold
+        self.pi_init = pi_init
 
         self.pi_matrix = np.array([])
         self.previous_pi_matrix = None
@@ -84,13 +86,19 @@ class EmVectorByFeature(ExpectationMaximization):
 
         logging.info("Explicit model has been imported - algorithm can be started")
 
-    def initialize_parameters(self):
+    def initialize_parameters(self, pi_init: np.ndarray = None):
         """
-        Initialize helper parameters for E-M.
+        Initialize data for EM
 
+        :param pi_init: Optional parameter to specify a specific parameter initialization for testing/debugging
         :return: None
         """
+
         logging.info(type(self).__name__, '- initialize parameters...')
+
+        # Pull pi initialization from object if not in argument
+        if pi_init is None:
+            pi_init = self.pi_init
 
         # Compute binary reviews matrix (1 if word in sentence, 0 if not) (same dimensions as reviews)
         self.reviews_binary = self.reviews_matrix.sign()
@@ -112,13 +120,17 @@ class EmVectorByFeature(ExpectationMaximization):
         self.hidden_parameters_background_estep = self.reviews_binary.multiply(self.lambda_background).multiply(
             self.background_probability)
 
-        # Generates equal weight initialization for testing
-        # if False:
-        #    self.pi_matrix = np.full((self.m, self.f), 1/self.f)
+        # Check if an initialization was specified and use if so
+        if pi_init is not None:
+            self.pi_matrix = pi_init
+        else:
+            # Generates equal weight initialization for testing
+            # if False:
+            #    self.pi_matrix = np.full((self.m, self.f), 1/self.f)
 
-        # Generates random intitialization
-        if True:
-            self.pi_matrix = np.random.dirichlet(np.ones(self.k), self.m)
+            # Generates random initialization
+            if True:
+                self.pi_matrix = np.random.dirichlet(np.ones(self.k), self.m)
 
     def e_step(self):
         """

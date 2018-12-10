@@ -42,7 +42,7 @@ REQUIRED = ["spacy==2.0.16",
 
 setuptools.setup(
     name="feature_mining",
-    version="0.0.12",
+    version="0.0.16",
     author="H. Wilder, N. Freundlich, Santu Karmaker",
     author_email="hwilder3@illinois.edu, norbert4@illinois.edu, karmake2@illinois.edu",
     description="Mine implicit features using a generative feature language model.",

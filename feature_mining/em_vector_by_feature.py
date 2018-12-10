@@ -5,6 +5,7 @@ from feature_mining import ParseAndModel
 from datetime import datetime
 import os
 import logging
+import time
 
 
 class EmVectorByFeature(ExpectationMaximization):
@@ -13,7 +14,10 @@ class EmVectorByFeature(ExpectationMaximization):
     """
 
     def __init__(self,  explicit_model: ParseAndModel = None,
-                 lambda_background: float = 0.7, max_iter: int = 50, delta_threshold: float = 1e-6, pi_init=None):
+                 lambda_background: float = 0.7,
+                 max_iter: int = 50,
+                 delta_threshold: float = 1e-6,
+                 pi_init=None):
         """
         Constructor for EM class (looping by feature)
 
@@ -68,11 +72,15 @@ class EmVectorByFeature(ExpectationMaximization):
 
     def import_data(self, explicit_model: ParseAndModel = None):
         """
-        Takes a ParseAndModel object and saves the data for EM algorithm use
+        Takes a ParseAndModel object and saves the data for EM algorithm use. Used mainly for testing.
+        If explicit_model is None, em behavior is not affected.
 
         :param explicit_model: A ParseAndModel object containing the necessary information for EM calculations
         :return: None
         """
+        if explicit_model is None:
+            return
+
         self.explicit_model = explicit_model
 
         self.m = explicit_model.model_results["section_word_counts_matrix"].shape[0]
@@ -230,8 +238,22 @@ class EmVectorByFeature(ExpectationMaximization):
 
 
 if __name__ == '__main__':
-    em = EmVectorByFeature()
+    print("CWD:", os.getcwd())
+    start_time = time.time()
+    print("Calling ParseAndModel...")
+    pm = ParseAndModel(feature_list=["sound", "battery", ["screen", "display"]],
+                       filename='../tests/data/parse_and_model/iPod.final',
+                       nlines=100)
+
+    print(pm.model_results.keys())
+    print("Calling EMVectorByFeature")
+    em = EmVectorByFeature(explicit_model=pm,
+                           max_iter=10)
     em.em()
+
+    end_time = time.time()
+    print("Elapsed: {} seconds".format(round(end_time - start_time, 4)))
+
 
 """
     * Notation:

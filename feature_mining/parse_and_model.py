@@ -51,8 +51,8 @@ class ParseAndModel:
         of strings will be treated as synonyms and given the same feature id.
         ex. ["sound", "battery", ["screen", "display"]]
         :param filename: Filename for the data set
-        :param input_type: A string specifying the type of input data so the correct read function can be chosen
-            options are "annotated" - which expects data in Santu's original format and "oneDocPerLine" - which expects
+        :param input_type: An enum of type InputType, specifying the type of input data so the correct read function can be chosen
+            options are "annotated" - which expects data in Santu's original format and "onedocperline" - which expects
             all data to be in a single file with one document per line
         :param nlines: Maximum number of lines from the file to read or None to read all lines
         :param remove_stopwords: Set to true if stop words should be removed from document sections before models are

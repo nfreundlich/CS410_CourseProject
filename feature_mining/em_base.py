@@ -65,13 +65,14 @@ class ExpectationMaximization:
         :return: pi matrix
         """
         print(type(self).__name__, "- base loop...")
-        while self.max_iter:
+        current_max_iter = self.max_iter
+        while current_max_iter:
             print(60*'-')
-            print(20 * '-', "Running Iteration:", self.max_iter, 20 * '-')
+            print(20 * '-', "Running Iteration:", self.max_iter - current_max_iter, 20 * '-')
             print(60 * '-')
 
             start_time_iteration = time.time()
-            self.max_iter -= 1
+            current_max_iter -= 1
             self.e_step()
             self.m_step()
             end_time_iteration = time.time()
@@ -80,7 +81,7 @@ class ExpectationMaximization:
             if self.pi_delta < self.delta_threshold:
                 print("Under change threshold, terminating")
                 break
-            if self.max_iter==0:
+            if current_max_iter==0:
                 print("Maximum iterations reached")
 
     def e_step(self):

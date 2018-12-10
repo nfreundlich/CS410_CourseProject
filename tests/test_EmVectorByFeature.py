@@ -66,12 +66,13 @@ class TestEmVectorByFeature(TestCase):
         infile.close()
 
         pm_inst = ParseAndModel(feature_list=["sound", "battery"], filename='data/parse_and_model/iPod.final',
-                                lemmatize_words=False, log_base=None, start_line=4, nlines=11,
+                                remove_stopwords=False, lemmatize_words=False, log_base=None, start_line=4, nlines=11,
                                 include_title_lines=False)
 
         # use fixed init
         # check section word counts
-        pi_init_em = np.empty([pm_inst.model_results["section_word_counts_matrix"].shape[0], len(pm_inst.model_results["model_feature"])])
+        pi_init_em = np.empty(
+            [pm_inst.model_results["section_word_counts_matrix"].shape[0], len(pm_inst.model_results["model_feature"])])
         for review_id in range(0, len(pi_init)):
             review_sections = pm_inst.parsed_text["section_list"]
             review_sections = review_sections[review_sections.doc_id == review_id]
@@ -194,7 +195,7 @@ class TestEmVectorByFeature(TestCase):
         infile.close()
 
         pm_inst = ParseAndModel(feature_list=["sound", "battery"], filename='data/parse_and_model/iPod.final',
-                                lemmatize_words=False, log_base=None, start_line=4, nlines=11,
+                                remove_stopwords=False, lemmatize_words=False, log_base=None, start_line=4, nlines=11,
                                 include_title_lines=False)
 
         # use fixed init
@@ -323,7 +324,8 @@ class TestEmVectorByFeature(TestCase):
             infile.close()
 
             pm_inst = ParseAndModel(feature_list=["sound", "battery"], filename='data/parse_and_model/iPod.final',
-                                    lemmatize_words=False, log_base=None, start_line=4, nlines=11,
+                                    remove_stopwords=False, lemmatize_words=False, log_base=None, start_line=4,
+                                    nlines=11,
                                     include_title_lines=False)
 
             # use fixed init
@@ -454,7 +456,7 @@ class TestEmVectorByFeature(TestCase):
         infile.close()
 
         pm_inst = ParseAndModel(feature_list=["sound", "battery"], filename='data/parse_and_model/iPod.final',
-                                lemmatize_words=False, log_base=None, start_line=4, nlines=11,
+                                remove_stopwords=False, lemmatize_words=False, log_base=None, start_line=4, nlines=11,
                                 include_title_lines=False)
 
         em = EmVectorByFeature(explicit_model=pm_inst)

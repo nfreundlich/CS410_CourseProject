@@ -21,7 +21,7 @@ class ParseAndModel:
     """
 
     def __init__(self, feature_list: list = None, filename: str = None, nlines: int = None,
-                 remove_stopwords: bool = False
+                 remove_stopwords: bool = True
                  , start_line: int = 0, lemmatize_words: bool = True, log_base: int = None,
                  include_title_lines: bool = True):
         """
@@ -428,7 +428,7 @@ class ParseAndModel:
                     feature_list=feature_list)
 
     # TODO: Slow, needs to be optimized, unit tests need to be added
-    def build_explicit_models(self, remove_stopwords: bool = False,
+    def build_explicit_models(self, remove_stopwords: bool = True,
                               lemmatize_words: bool = True,
                               log_base: int = None) -> dict:
         """

@@ -303,7 +303,8 @@ class TestParseAndModel(TestCase):
         infile.close()
 
         pm = ParseAndModel(feature_list=["sound", "battery"], filename='data/parse_and_model/iPod.final',
-                           lemmatize_words=False, log_base=None, start_line=4, nlines=11, include_title_lines=False)
+                           remove_stopwords=False, lemmatize_words=False, log_base=None, start_line=4, nlines=11,
+                           include_title_lines=False)
 
         # check section word counts
         pm_section_word_counts = pm.model_results["section_word_counts_matrix"].toarray()
@@ -363,5 +364,5 @@ if __name__ == '__main__':
     # pm = ParseAndModel()
 
     # format_feature_list, read_annotated_data, build_explicit_models
-    #feature_list = ParseAndModel.format_feature_list(feature_list=["sound", "battery", ["screen", "display"]])
+    # feature_list = ParseAndModel.format_feature_list(feature_list=["sound", "battery", ["screen", "display"]])
     pass

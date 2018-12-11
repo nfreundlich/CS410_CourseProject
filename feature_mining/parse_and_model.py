@@ -5,9 +5,13 @@ import numpy as np
 from scipy.sparse import csr_matrix
 import nltk
 from nltk.tokenize import sent_tokenize
-import en_core_web_sm
-# import spacy
-# from spacy.attrs import LOWER, ORTH
+from spacy.cli.download import download as spacy_download
+try:
+    import en_core_web_sm
+except ImportError:
+    logging.warning(">Spacy  en_core_web_sm not found. Downloading and installing.")
+    spacy_download("en_core_web_sm")
+    import en_core_web_sm
 from collections import Counter, defaultdict, OrderedDict
 import time
 import os
@@ -31,7 +35,8 @@ class ParseAndModel:
         annotated = auto()
         docperline = auto()
 
-    def __init__(self, feature_list: list = None,
+    def __init__(self,
+                 feature_list: list = None,
                  filename: str = None,
                  input_type: Enum = InputType.annotated,
                  nlines: int = None,
@@ -47,8 +52,8 @@ class ParseAndModel:
         of strings will be treated as synonyms and given the same feature id.
         ex. ["sound", "battery", ["screen", "display"]]
         :param filename: Filename for the data set
-        :param input_type: A string specifying the type of input data so the correct read function can be chosen
-            options are "annotated" - which expects data in Santu's original format and "oneDocPerLine" - which expects
+        :param input_type: An enum of type InputType, specifying the type of input data so the correct read function can be chosen
+            options are "annotated" - which expects data in Santu's original format and "onedocperline" - which expects
             all data to be in a single file with one document per line
         :param nlines: Maximum number of lines from the file to read or None to read all lines
         :param remove_stopwords: Set to true if stop words should be removed from document sections before models are
@@ -671,7 +676,8 @@ if __name__ == '__main__':
 
     print("Calling ParseAndModel...")
     pm = ParseAndModel(feature_list=["sound", "battery", ["screen", "display"]],
-                       filename='../tests/data/parse_and_model/iPod.final')
+                       filename='../tests/data/parse_and_model/iPod.final',
+                       nlines=500)
 
     print(pm.model_results)
 

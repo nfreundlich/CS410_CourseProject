@@ -20,6 +20,7 @@ ini.xml
 modules.xml
 vcs.xml
 .idea/*
+.ipynb_checkpoints/*
 
 
 # User-specific stuff

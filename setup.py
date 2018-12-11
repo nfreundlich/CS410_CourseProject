@@ -36,11 +36,9 @@ REQUIRED = ["spacy==2.0.16",
             "wrapt==1.10.11",
             ]
 
-#TODO: add package data with demo files: https://docs.python.org/3/distutils/sourcedist.html#manifest
-
 setuptools.setup(
     name="feature_mining",
-    version="0.0.22",
+    version="0.0.24",
     author="H. Wilder, N. Freundlich, Santu Karmaker",
     author_email="hwilder3@illinois.edu, norbert4@illinois.edu, karmake2@illinois.edu",
     description="Mine implicit features using a generative feature language model.",
@@ -48,6 +46,8 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/pypa/sampleproject",
     packages=setuptools.find_packages(exclude=('tests',)),
+    package_dir={'feature_mining': './feature_mining'},
+    package_data={'feature_mining': ['data/*.final']},
     install_requires=REQUIRED,
     dependency_links=["https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-2.0.0/en_core_web_sm-2.0.0.tar.gz#en_core_web_sm"], #en_core_web_sm
     data_files=[
@@ -60,3 +60,10 @@ setuptools.setup(
     ],
 )
 
+"""
+Interesting resources checked for creating setup.py:
+https://stackoverflow.com/questions/779495/python-access-data-in-package-subdirectory
+https://docs.python.org/3/distutils/setupscript.html#installing-package-data
+https://docs.python.org/3/distutils/sourcedist.html#manifest
+https://github.com/kennethreitz/setup.py
+"""

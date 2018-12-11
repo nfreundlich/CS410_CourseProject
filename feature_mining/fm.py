@@ -1,6 +1,6 @@
 import logging
 from enum import Enum
-import os
+import pkg_resources
 from feature_mining import ParseAndModel
 from feature_mining import EmVectorByFeature
 from feature_mining import GFLM
@@ -58,9 +58,12 @@ class FeatureMining:
         :return: None
         """
         logging.info(type(self).__name__, "- load_ipod...")
-        current_dir, current_filename = os.path.split(__file__)
 
-        filename = os.path.join(current_dir, "data", "iPod.final") # filename = './data/iPod.final'
+        # data_path = pkg_resources.resource_filename('feature_mining', 'data/')
+        filename = pkg_resources.resource_filename('feature_mining', 'data/iPod.final')
+
+        logging.warning(">loading file:", filename)
+
         feature_list = ["sound", "battery", ["screen", "display"]]
         nlines = None
 

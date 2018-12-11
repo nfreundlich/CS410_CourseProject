@@ -13,7 +13,8 @@ class EmVectorByFeature(ExpectationMaximization):
     Vectorized implementation of EM algorithm. Loops over features.
     """
 
-    def __init__(self,  explicit_model: ParseAndModel = None,
+    def __init__(self,
+                 explicit_model: ParseAndModel = None,
                  lambda_background: float = 0.7,
                  max_iter: int = 50,
                  delta_threshold: float = 1e-6,

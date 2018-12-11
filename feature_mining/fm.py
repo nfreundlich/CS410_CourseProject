@@ -13,6 +13,7 @@ class FeatureMining:
         from feature_mining import FeatureMining
         fm.usage()
     """
+
     def __init__(self):
         """
         Constructor. Initialize members to None.
@@ -49,7 +50,8 @@ class FeatureMining:
             exit(1)
         self.pm = ParseAndModel(feature_list=feature_list,  # list of features
                                 filename=filename,  # file with input data
-                                nlines=nlines)  # number of lines to read
+                                nlines=nlines,  # number of lines to read
+                                input_type=input_type)  # input type as enum
 
     def load_ipod(self, full_set: bool = False):
         """
@@ -62,7 +64,7 @@ class FeatureMining:
         # data_path = pkg_resources.resource_filename('feature_mining', 'data/')
         filename = pkg_resources.resource_filename('feature_mining', 'data/iPod.final')
 
-        logging.warning(">loading file:" + filename)
+        logging.info(">loading file:" + filename)
 
         feature_list = ["sound", "battery", ["screen", "display"]]
         nlines = None
@@ -72,7 +74,7 @@ class FeatureMining:
 
         self.load_data(feature_list=feature_list,  # list of features
                        filename=filename,  # file with input data
-                       input_type=ParseAndModel.InputType.annotated, # data format in input file
+                       input_type=ParseAndModel.InputType.annotated,  # data format in input file
                        nlines=nlines)  # number of lines to read
 
         print("loaded features: ", feature_list)
@@ -80,15 +82,17 @@ class FeatureMining:
 
         logging.info(type(self).__name__, "- done: load_ipod...")
 
-    def fit(self, max_iter=50):
+    def fit(self, max_iter=50, delta_threshold=1e-6):
         """
         Executes Expectation-Maximization on previously loaded data.
+        :param delta_threshold: delta threshold for stopping the iterations
         :param max_iter: maximum number of iterations in Expectation Maximization
         :return: None
         """
         logging.info(type(self).__name__, "- fit...")
         self.em = EmVectorByFeature(explicit_model=self.pm,
-                                    max_iter=max_iter)
+                                    max_iter=max_iter,
+                                    delta_threshold=delta_threshold)
         self.em.em()
         logging.info(type(self).__name__, "- done: fit...")
 

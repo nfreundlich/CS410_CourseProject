@@ -40,7 +40,7 @@ REQUIRED = ["spacy==2.0.16",
 
 setuptools.setup(
     name="feature_mining",
-    version="0.0.18",
+    version="0.0.22",
     author="H. Wilder, N. Freundlich, Santu Karmaker",
     author_email="hwilder3@illinois.edu, norbert4@illinois.edu, karmake2@illinois.edu",
     description="Mine implicit features using a generative feature language model.",
@@ -50,6 +50,9 @@ setuptools.setup(
     packages=setuptools.find_packages(exclude=('tests',)),
     install_requires=REQUIRED,
     dependency_links=["https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-2.0.0/en_core_web_sm-2.0.0.tar.gz#en_core_web_sm"], #en_core_web_sm
+    data_files=[
+                ('./data', ['./feature_mining/data/iPod.final', ]),
+                ],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

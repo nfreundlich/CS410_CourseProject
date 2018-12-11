@@ -35,7 +35,8 @@ class ParseAndModel:
         annotated = auto()
         docperline = auto()
 
-    def __init__(self, feature_list: list = None,
+    def __init__(self,
+                 feature_list: list = None,
                  filename: str = None,
                  input_type: Enum = InputType.annotated,
                  nlines: int = None,
@@ -675,7 +676,8 @@ if __name__ == '__main__':
 
     print("Calling ParseAndModel...")
     pm = ParseAndModel(feature_list=["sound", "battery", ["screen", "display"]],
-                       filename='../tests/data/parse_and_model/iPod.final')
+                       filename='../tests/data/parse_and_model/iPod.final',
+                       nlines=500)
 
     print(pm.model_results)
 

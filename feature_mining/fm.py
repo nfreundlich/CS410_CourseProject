@@ -62,7 +62,7 @@ class FeatureMining:
         # data_path = pkg_resources.resource_filename('feature_mining', 'data/')
         filename = pkg_resources.resource_filename('feature_mining', 'data/iPod.final')
 
-        logging.warning(">loading file:", filename)
+        logging.warning(">loading file:" + filename)
 
         feature_list = ["sound", "battery", ["screen", "display"]]
         nlines = None

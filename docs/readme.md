@@ -1,2 +1,5 @@
-#Docs readme:
-Docs should be generated automatically.
+#Docs readme
+Docs generated with pydoc:
+```
+pydoc -w ./
+````

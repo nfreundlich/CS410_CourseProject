@@ -125,32 +125,32 @@ class FeatureMining:
         """
         section_list = self.pm.parsed_text['section_list'][['section_id', 'section_text']]
         feature_list = self.pm.formatted_feature_list.drop_duplicates(subset=['feature_id'])
-        feature_list['implicit_feature_id'] = feature_list['feature_id']
         gflm_word = self.gflm.gflm_word
         gflm_section = self.gflm.gflm_section
 
+        # feature text equivalence
+        feat_dict = {}
+        for index, raw in feature_list.iterrows():
+            print(raw['feature'])
+            feat_dict[raw['feature_id']] = raw['feature']
+
+
         # gflm_word
-        gflm_word_join = section_list.join(gflm_word,
-                                           lsuffix='_section_list',
-                                           rsuffix='_gflm_word')
-        gflm_word_join = gflm_word_join.dropna(subset=['implicit_feature_id'])
-        gflm_word_join['implicit_feature_id'] = gflm_word_join['implicit_feature_id'].astype(int)
-        gflm_word_join = gflm_word_join.join(feature_list, on='implicit_feature_id',
-                                             lsuffix='_gflm_word_join',
-                                             rsuffix='_feature_list')
-        gflm_word_join = gflm_word_join[['feature', 'section_text', 'gflm_word']]
+        gflm_word_join = gflm_word.join(section_list,
+                                           rsuffix='_section_list',
+                                           lsuffix='_gflm_word')
+        gflm_word_join['feature'] = gflm_word_join['implicit_feature_id'].apply(lambda x: feat_dict[x])
+        gflm_word_join = gflm_word_join[['feature', 'section_text', 'section_id_gflm_word', 'gflm_word']]
+
         self.gflm_word_result = gflm_word_join
 
         # gflm_section
-        gflm_section_join = section_list.join(gflm_section, on='section_id',
-                                              lsuffix='_section_list',
-                                              rsuffix='_gflm_section')
-        gflm_section_join = gflm_section_join.dropna(subset=['implicit_feature_id'])
-        gflm_section_join['implicit_feature_id'] = gflm_section_join['implicit_feature_id'].astype(int)
-        gflm_section_join = gflm_section_join.join(feature_list, on='implicit_feature_id',
-                                                   lsuffix='_gflm_section_join',
-                                                   rsuffix='_feature_list')
-        gflm_section_join = gflm_section_join[['feature', 'section_text', 'gflm_section']]
+        gflm_section_join = gflm_section.join(section_list, on='section_id',
+                                              rsuffix='_section_list',
+                                              lsuffix='_gflm_section')
+        gflm_section_join['feature'] = gflm_section_join['implicit_feature_id'].apply(lambda x: feat_dict[x])
+        gflm_section_join = gflm_section_join[['feature', 'section_text', 'section_id_gflm_section', 'gflm_section']]
+
         self.gflm_section_result = gflm_section_join
 
     def usage(self):
@@ -176,6 +176,7 @@ class FeatureMining:
 
 
 if __name__ == '__main__':
+    print('Feature mining defatult workflow...')
     fm = FeatureMining()
     fm.load_ipod(full_set=False)
     fm.fit()
@@ -185,3 +186,4 @@ if __name__ == '__main__':
     print(fm.gflm.gflm_word.head(10))
     print(fm.gflm_section_result.sort_values(by=['gflm_section'], ascending=False)[['feature', 'section_text']].head(20))
     print(fm.gflm_word_result.sort_values(by=['gflm_word'], ascending=False)[['feature', 'section_text']].head(20))
+    print('Done.')

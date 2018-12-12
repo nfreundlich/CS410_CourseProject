@@ -1,0 +1,273 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module feature_mining.parse_and_model</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="feature_mining.html"><font color="#ffffff">feature_mining</font></a>.parse_and_model</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:c%3A%5Cusers%5Cproject%20code%5Cfeature_mining%5Cparse_and_model.py">c:\users\project code\feature_mining\parse_and_model.py</a></font></td></tr></table>
+    <p></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="en_core_web_sm.html">en_core_web_sm</a><br>
+<a href="logging.html">logging</a><br>
+<a href="math.html">math</a><br>
+</td><td width="25%" valign=top><a href="metapy.html">metapy</a><br>
+<a href="nltk.html">nltk</a><br>
+<a href="numpy.html">numpy</a><br>
+</td><td width="25%" valign=top><a href="os.html">os</a><br>
+<a href="pandas.html">pandas</a><br>
+<a href="spacy.html">spacy</a><br>
+</td><td width="25%" valign=top><a href="time.html">time</a><br>
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="builtins.html#object">builtins.object</a>
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="feature_mining.parse_and_model.html#ParseAndModel">ParseAndModel</a>
+</font></dt></dl>
+</dd>
+</dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="ParseAndModel">class <strong>ParseAndModel</strong></a>(<a href="builtins.html#object">builtins.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Treats&nbsp;data&nbsp;input&nbsp;chain.<br>
+Based&nbsp;on&nbsp;this&nbsp;data,&nbsp;computes&nbsp;matrices&nbsp;for&nbsp;reviews&nbsp;and&nbsp;features.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="ParseAndModel-__init__"><strong>__init__</strong></a>(self, feature_list:list=None, filename:str=None, input_type:str='annotated', nlines:int=None, remove_stopwords:bool=True, start_line:int=0, lemmatize_words:bool=True, log_base:int=None, include_title_lines:bool=True)</dt><dd><tt>:param&nbsp;feature_list:&nbsp;a&nbsp;list&nbsp;of&nbsp;strings&nbsp;and&nbsp;lists&nbsp;of&nbsp;strings.&nbsp;Individual&nbsp;strings&nbsp;will&nbsp;be&nbsp;given&nbsp;separate&nbsp;ids,&nbsp;lists<br>
+of&nbsp;strings&nbsp;will&nbsp;be&nbsp;treated&nbsp;as&nbsp;synonyms&nbsp;and&nbsp;given&nbsp;the&nbsp;same&nbsp;feature&nbsp;id.<br>
+ex.&nbsp;["sound",&nbsp;"battery",&nbsp;["screen",&nbsp;"display"]]<br>
+:param&nbsp;filename:&nbsp;Filename&nbsp;for&nbsp;the&nbsp;data&nbsp;set<br>
+:param&nbsp;input_type:&nbsp;A&nbsp;string&nbsp;specifying&nbsp;the&nbsp;type&nbsp;of&nbsp;input&nbsp;data&nbsp;so&nbsp;the&nbsp;correct&nbsp;read&nbsp;function&nbsp;can&nbsp;be&nbsp;chosen<br>
+&nbsp;&nbsp;&nbsp;&nbsp;options&nbsp;are&nbsp;"annotated"&nbsp;-&nbsp;which&nbsp;expects&nbsp;data&nbsp;in&nbsp;Santu's&nbsp;original&nbsp;format&nbsp;and&nbsp;"oneDocPerLine"&nbsp;-&nbsp;which&nbsp;expects<br>
+&nbsp;&nbsp;&nbsp;&nbsp;all&nbsp;data&nbsp;to&nbsp;be&nbsp;in&nbsp;a&nbsp;single&nbsp;file&nbsp;with&nbsp;one&nbsp;document&nbsp;per&nbsp;line<br>
+:param&nbsp;nlines:&nbsp;Maximum&nbsp;number&nbsp;of&nbsp;lines&nbsp;from&nbsp;the&nbsp;file&nbsp;to&nbsp;read&nbsp;or&nbsp;None&nbsp;to&nbsp;read&nbsp;all&nbsp;lines<br>
+:param&nbsp;remove_stopwords:&nbsp;Set&nbsp;to&nbsp;true&nbsp;if&nbsp;stop&nbsp;words&nbsp;should&nbsp;be&nbsp;removed&nbsp;from&nbsp;document&nbsp;sections&nbsp;before&nbsp;models&nbsp;are<br>
+&nbsp;&nbsp;&nbsp;&nbsp;created<br>
+:param&nbsp;start_line:&nbsp;Optional&nbsp;parameter,&nbsp;specific&nbsp;line&nbsp;number&nbsp;to&nbsp;start&nbsp;at,&nbsp;mostly&nbsp;for&nbsp;testing&nbsp;purposes<br>
+:param&nbsp;lemmatize_words:&nbsp;Set&nbsp;to&nbsp;true&nbsp;if&nbsp;lemmatization&nbsp;should&nbsp;be&nbsp;performed&nbsp;on&nbsp;document&nbsp;sections&nbsp;before&nbsp;models&nbsp;are<br>
+&nbsp;&nbsp;&nbsp;&nbsp;created<br>
+:param&nbsp;log_base:&nbsp;Optional&nbsp;parameter&nbsp;to&nbsp;specify&nbsp;log&nbsp;base,&nbsp;defaults&nbsp;to&nbsp;ln&nbsp;if&nbsp;not&nbsp;set<br>
+:param&nbsp;include_title_lines:&nbsp;Set&nbsp;to&nbsp;true&nbsp;to&nbsp;include&nbsp;lines&nbsp;as&nbsp;marked&nbsp;in&nbsp;title&nbsp;lines&nbsp;in&nbsp;the&nbsp;output,&nbsp;false&nbsp;otherwise<br>
+&nbsp;&nbsp;&nbsp;&nbsp;only&nbsp;valid&nbsp;for&nbsp;annotated&nbsp;data&nbsp;input</tt></dd></dl>
+
+<dl><dt><a name="ParseAndModel-build_explicit_models"><strong>build_explicit_models</strong></a>(self, remove_stopwords:bool=True, lemmatize_words:bool=True, log_base:int=None) -&gt; dict</dt><dd><tt>This&nbsp;function&nbsp;builds&nbsp;a&nbsp;background&nbsp;model,&nbsp;set&nbsp;of&nbsp;topic&nbsp;models&nbsp;and&nbsp;summarizes&nbsp;the&nbsp;counts&nbsp;of&nbsp;words&nbsp;in&nbsp;each&nbsp;sentence<br>
+&nbsp;&nbsp;&nbsp;&nbsp;to&nbsp;prepare&nbsp;for&nbsp;EM&nbsp;optimization<br>
+&nbsp;<br>
+:param&nbsp;remove_stopwords:&nbsp;Set&nbsp;to&nbsp;true&nbsp;if&nbsp;stop&nbsp;words&nbsp;should&nbsp;be&nbsp;removed&nbsp;from&nbsp;document&nbsp;sections&nbsp;before&nbsp;models&nbsp;are<br>
+&nbsp;&nbsp;&nbsp;&nbsp;created<br>
+:param&nbsp;lemmatize_words:&nbsp;Set&nbsp;to&nbsp;true&nbsp;if&nbsp;lemmatization&nbsp;should&nbsp;be&nbsp;performed&nbsp;on&nbsp;document&nbsp;sections&nbsp;before&nbsp;models&nbsp;are<br>
+&nbsp;&nbsp;&nbsp;&nbsp;created<br>
+:param&nbsp;log_base:&nbsp;Optional&nbsp;parameter&nbsp;to&nbsp;specify&nbsp;log&nbsp;base,&nbsp;defaults&nbsp;to&nbsp;ln&nbsp;if&nbsp;not&nbsp;set<br>
+:return:&nbsp;a&nbsp;dictionary&nbsp;with&nbsp;six&nbsp;entries&nbsp;-<br>
+&nbsp;&nbsp;&nbsp;&nbsp;model_background:&nbsp;background&nbsp;model&nbsp;estimated&nbsp;from&nbsp;the&nbsp;entire&nbsp;document&nbsp;collection&nbsp;as&nbsp;described&nbsp;in&nbsp;section&nbsp;4.2<br>
+&nbsp;&nbsp;&nbsp;&nbsp;model_feature:&nbsp;feature&nbsp;models&nbsp;estimated&nbsp;from&nbsp;explicit&nbsp;mention&nbsp;sections&nbsp;as&nbsp;described&nbsp;in&nbsp;section&nbsp;4.2<br>
+&nbsp;&nbsp;&nbsp;&nbsp;model_background_matrix:&nbsp;background&nbsp;model&nbsp;estimated&nbsp;from&nbsp;the&nbsp;entire&nbsp;document&nbsp;collection&nbsp;as&nbsp;described&nbsp;in<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;section&nbsp;4.2&nbsp;in&nbsp;dense&nbsp;ndarray&nbsp;form&nbsp;as&nbsp;follows:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Word&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;Background&nbsp;probability<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;----------------------------------------<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;word&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;p(w1&nbsp;|&nbsp;B)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;|&nbsp;&nbsp;&nbsp;...<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;word&nbsp;v&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;p(wv&nbsp;|&nbsp;B)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;model_feature_matrix:&nbsp;feature&nbsp;models&nbsp;estimated&nbsp;from&nbsp;explicit&nbsp;mention&nbsp;sections&nbsp;as&nbsp;described&nbsp;in&nbsp;section&nbsp;4.2&nbsp;in<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dense&nbsp;ndarray&nbsp;form&nbsp;as&nbsp;follows:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Word/feature&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;feature&nbsp;1&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;feature&nbsp;k<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-----------------------------------------------------<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;word&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;p(w1&nbsp;|&nbsp;f1)&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;p(w1&nbsp;|&nbsp;fk)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;word&nbsp;v&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;p(wv&nbsp;|&nbsp;fk)&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;p(wv&nbsp;|&nbsp;fk)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;section_word_counts_matrix:&nbsp;sparse&nbsp;csr&nbsp;matrix&nbsp;with&nbsp;word&nbsp;counts&nbsp;in&nbsp;each&nbsp;section&nbsp;as&nbsp;needed&nbsp;by&nbsp;the&nbsp;EM&nbsp;alg&nbsp;as<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;follows:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Section/Word&nbsp;|&nbsp;word&nbsp;1&nbsp;...&nbsp;...&nbsp;...&nbsp;...&nbsp;word&nbsp;v<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;---------------------------------------------------<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Section&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;count(s_1,w_1)&nbsp;...&nbsp;...&nbsp;&nbsp;count(s_1,&nbsp;w_v)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Section&nbsp;2&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;count(s_2,w_2)&nbsp;...&nbsp;...&nbsp;&nbsp;count(s_2,&nbsp;w_v)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Section&nbsp;m&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;count(s_m,&nbsp;w_1)...&nbsp;...&nbsp;&nbsp;count(s_m,&nbsp;w_v)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;vocabulary_lookup:&nbsp;a&nbsp;dictionary&nbsp;with<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;key:&nbsp;word&nbsp;id&nbsp;used&nbsp;in&nbsp;models,&nbsp;matrices,&nbsp;etc.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;value:&nbsp;actual&nbsp;word</tt></dd></dl>
+
+<dl><dt><a name="ParseAndModel-build_explicit_models_metapy"><strong>build_explicit_models_metapy</strong></a>(text_set:pandas.core.frame.DataFrame, feature_set:pandas.core.frame.DataFrame, remove_stopwords:bool=False, lemmatize_words:bool=True) -&gt; dict</dt><dd><tt>This&nbsp;function&nbsp;builds&nbsp;a&nbsp;background&nbsp;model,&nbsp;set&nbsp;of&nbsp;topic&nbsp;models&nbsp;and&nbsp;summarizes&nbsp;the&nbsp;counts&nbsp;of&nbsp;words&nbsp;in&nbsp;each&nbsp;sentence<br>
+&nbsp;&nbsp;&nbsp;&nbsp;to&nbsp;prepare&nbsp;for&nbsp;EM&nbsp;optimization<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ex.&nbsp;em_input&nbsp;=&nbsp;<a href="#ParseAndModel-build_explicit_models">build_explicit_models</a>(text_set=text_set,&nbsp;feature_set=feature_set)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ex.&nbsp;em_input&nbsp;=&nbsp;<a href="#ParseAndModel-build_explicit_models">build_explicit_models</a>(text_set&nbsp;=&nbsp;annotated_data["section_list"],&nbsp;feature_set&nbsp;=&nbsp;feature_list)<br>
+&nbsp;<br>
+:param&nbsp;text_set:&nbsp;a&nbsp;pandas&nbsp;DataFrame&nbsp;with&nbsp;(at&nbsp;a&nbsp;minimum)&nbsp;the&nbsp;following&nbsp;columns<br>
+:param&nbsp;feature_set:&nbsp;output&nbsp;of&nbsp;format&nbsp;feature&nbsp;list&nbsp;-&nbsp;OR&nbsp;-<br>
+&nbsp;&nbsp;&nbsp;&nbsp;DataFrame&nbsp;with&nbsp;integer&nbsp;ids&nbsp;for&nbsp;each&nbsp;feature,&nbsp;synonyms&nbsp;are&nbsp;grouped&nbsp;together<br>
+&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;feature&nbsp;(str)&nbsp;|&nbsp;feature_id&nbsp;(int)&nbsp;&nbsp;|&nbsp;feature_term_id&nbsp;(int)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;feature:&nbsp;string&nbsp;representation&nbsp;of&nbsp;the&nbsp;feature<br>
+&nbsp;&nbsp;&nbsp;&nbsp;feature_id:&nbsp;integer&nbsp;id&nbsp;for&nbsp;the&nbsp;feature,&nbsp;will&nbsp;be&nbsp;the&nbsp;same&nbsp;for&nbsp;synonyms&nbsp;if&nbsp;input&nbsp;in&nbsp;nested&nbsp;list<br>
+&nbsp;&nbsp;&nbsp;&nbsp;feature_term_id:&nbsp;integer&nbsp;id&nbsp;for&nbsp;the&nbsp;feature,&nbsp;will&nbsp;be&nbsp;unique&nbsp;for&nbsp;each&nbsp;string,&nbsp;including&nbsp;synonyms<br>
+:param&nbsp;lemmatize_words:&nbsp;set&nbsp;to&nbsp;true&nbsp;if&nbsp;lemmatization&nbsp;should&nbsp;be&nbsp;performed&nbsp;on&nbsp;document&nbsp;sections&nbsp;before&nbsp;models&nbsp;are<br>
+&nbsp;&nbsp;&nbsp;&nbsp;created<br>
+:param&nbsp;remove_stopwords:&nbsp;set&nbsp;to&nbsp;true&nbsp;if&nbsp;stop&nbsp;words&nbsp;should&nbsp;be&nbsp;removed&nbsp;from&nbsp;document&nbsp;sections&nbsp;before&nbsp;models&nbsp;are<br>
+&nbsp;&nbsp;&nbsp;&nbsp;created<br>
+:return:&nbsp;a&nbsp;dictionary&nbsp;with&nbsp;seven&nbsp;entries&nbsp;-<br>
+&nbsp;&nbsp;&nbsp;&nbsp;model_background:&nbsp;background&nbsp;model&nbsp;estimated&nbsp;from&nbsp;the&nbsp;entire&nbsp;document&nbsp;collection&nbsp;as&nbsp;described&nbsp;in&nbsp;section&nbsp;4.2<br>
+&nbsp;&nbsp;&nbsp;&nbsp;model_background_matrix:&nbsp;background&nbsp;model&nbsp;estimated&nbsp;from&nbsp;the&nbsp;entire&nbsp;document&nbsp;collection&nbsp;as&nbsp;described&nbsp;in<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;section&nbsp;4.2&nbsp;in&nbsp;array&nbsp;form&nbsp;as&nbsp;follows:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Word&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;Background&nbsp;probability<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;----------------------------------------<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;word&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;bp_1<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;|&nbsp;&nbsp;&nbsp;...<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;word&nbsp;|V|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;bp_|V|<br>
+&nbsp;&nbsp;&nbsp;&nbsp;model_feature:&nbsp;feature&nbsp;models&nbsp;estimated&nbsp;from&nbsp;explicit&nbsp;mention&nbsp;sections&nbsp;as&nbsp;described&nbsp;in&nbsp;section&nbsp;4.2<br>
+&nbsp;&nbsp;&nbsp;&nbsp;model_feature_matrix:&nbsp;feature&nbsp;models&nbsp;estimated&nbsp;from&nbsp;explicit&nbsp;mention&nbsp;sections&nbsp;as&nbsp;described&nbsp;in&nbsp;section&nbsp;4.2&nbsp;in<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;array&nbsp;form&nbsp;as&nbsp;follows:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Word/Feature&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;Feature&nbsp;1&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Feature&nbsp;|f|=k<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-----------------------------------------------------------<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;word&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;p(w1&nbsp;|&nbsp;f1)&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;p(w1&nbsp;|&nbsp;fk)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;....&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;word&nbsp;nw&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;p(w_|V|,&nbsp;fk)&nbsp;...&nbsp;....&nbsp;&nbsp;&nbsp;tm(w_|V|,&nbsp;fk)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;section_word_counts:&nbsp;word&nbsp;counts&nbsp;in&nbsp;each&nbsp;section&nbsp;as&nbsp;needed&nbsp;by&nbsp;the&nbsp;EM&nbsp;algorithm<br>
+&nbsp;&nbsp;&nbsp;&nbsp;section_word_counts_matrix:&nbsp;word&nbsp;counts&nbsp;in&nbsp;each&nbsp;section&nbsp;in&nbsp;matrix&nbsp;form&nbsp;as&nbsp;needed&nbsp;by&nbsp;the&nbsp;EM&nbsp;alg&nbsp;as&nbsp;follows:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Section/Word&nbsp;|&nbsp;word&nbsp;1&nbsp;...&nbsp;...&nbsp;...&nbsp;...&nbsp;word&nbsp;|V|<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;----------------------------------------------------------<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Section&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;count(s_1,w_1)&nbsp;...&nbsp;...&nbsp;&nbsp;count(s_1,&nbsp;w_|V|)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Section&nbsp;2&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;count(s_2,w_1)&nbsp;...&nbsp;...&nbsp;&nbsp;count(s_2,&nbsp;w_|V|)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Section&nbsp;m&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;count(s_m,&nbsp;w_1)...&nbsp;...&nbsp;&nbsp;count(s_m,&nbsp;w_|V|)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;vocabulary_lookup:&nbsp;a&nbsp;dictionary&nbsp;with<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;key:&nbsp;word&nbsp;id&nbsp;used&nbsp;in&nbsp;models,&nbsp;matrices,&nbsp;etc.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;value:&nbsp;actual&nbsp;word</tt></dd></dl>
+
+<dl><dt><a name="ParseAndModel-build_explicit_models_nltk"><strong>build_explicit_models_nltk</strong></a>(text_set:pandas.core.frame.DataFrame, feature_set:pandas.core.frame.DataFrame, remove_stopwords:bool=False, lemmatize_words:bool=True) -&gt; dict</dt><dd><tt>This&nbsp;function&nbsp;builds&nbsp;a&nbsp;background&nbsp;model,&nbsp;set&nbsp;of&nbsp;topic&nbsp;models&nbsp;and&nbsp;summarizes&nbsp;the&nbsp;counts&nbsp;of&nbsp;words&nbsp;in&nbsp;each&nbsp;sentence<br>
+&nbsp;&nbsp;&nbsp;&nbsp;to&nbsp;prepare&nbsp;for&nbsp;EM&nbsp;optimization<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ex.&nbsp;em_input&nbsp;=&nbsp;<a href="#ParseAndModel-build_explicit_models">build_explicit_models</a>(text_set=text_set,&nbsp;feature_set=feature_set)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ex.&nbsp;em_input&nbsp;=&nbsp;<a href="#ParseAndModel-build_explicit_models">build_explicit_models</a>(text_set&nbsp;=&nbsp;annotated_data["section_list"],&nbsp;feature_set&nbsp;=&nbsp;feature_list)<br>
+&nbsp;<br>
+:param&nbsp;text_set:&nbsp;a&nbsp;pandas&nbsp;DataFrame&nbsp;with&nbsp;(at&nbsp;a&nbsp;minimum)&nbsp;the&nbsp;following&nbsp;columns<br>
+:param&nbsp;feature_set:&nbsp;output&nbsp;of&nbsp;format&nbsp;feature&nbsp;list&nbsp;-&nbsp;OR&nbsp;-<br>
+&nbsp;&nbsp;&nbsp;&nbsp;DataFrame&nbsp;with&nbsp;integer&nbsp;ids&nbsp;for&nbsp;each&nbsp;feature,&nbsp;synonyms&nbsp;are&nbsp;grouped&nbsp;together<br>
+&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;feature&nbsp;(str)&nbsp;|&nbsp;feature_id&nbsp;(int)&nbsp;&nbsp;|&nbsp;feature_term_id&nbsp;(int)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;feature:&nbsp;string&nbsp;representation&nbsp;of&nbsp;the&nbsp;feature<br>
+&nbsp;&nbsp;&nbsp;&nbsp;feature_id:&nbsp;integer&nbsp;id&nbsp;for&nbsp;the&nbsp;feature,&nbsp;will&nbsp;be&nbsp;the&nbsp;same&nbsp;for&nbsp;synonyms&nbsp;if&nbsp;input&nbsp;in&nbsp;nested&nbsp;list<br>
+&nbsp;&nbsp;&nbsp;&nbsp;feature_term_id:&nbsp;integer&nbsp;id&nbsp;for&nbsp;the&nbsp;feature,&nbsp;will&nbsp;be&nbsp;unique&nbsp;for&nbsp;each&nbsp;string,&nbsp;including&nbsp;synonyms<br>
+:param&nbsp;lemmatize_words:&nbsp;set&nbsp;to&nbsp;true&nbsp;if&nbsp;lemmatization&nbsp;should&nbsp;be&nbsp;performed&nbsp;on&nbsp;document&nbsp;sections&nbsp;before&nbsp;models&nbsp;are<br>
+&nbsp;&nbsp;&nbsp;&nbsp;created<br>
+:param&nbsp;remove_stopwords:&nbsp;set&nbsp;to&nbsp;true&nbsp;if&nbsp;stop&nbsp;words&nbsp;should&nbsp;be&nbsp;removed&nbsp;from&nbsp;document&nbsp;sections&nbsp;before&nbsp;models&nbsp;are<br>
+&nbsp;&nbsp;&nbsp;&nbsp;created<br>
+:return:&nbsp;a&nbsp;dictionary&nbsp;with&nbsp;seven&nbsp;entries&nbsp;-<br>
+&nbsp;&nbsp;&nbsp;&nbsp;model_background:&nbsp;background&nbsp;model&nbsp;estimated&nbsp;from&nbsp;the&nbsp;entire&nbsp;document&nbsp;collection&nbsp;as&nbsp;described&nbsp;in&nbsp;section&nbsp;4.2<br>
+&nbsp;&nbsp;&nbsp;&nbsp;model_background_matrix:&nbsp;background&nbsp;model&nbsp;estimated&nbsp;from&nbsp;the&nbsp;entire&nbsp;document&nbsp;collection&nbsp;as&nbsp;described&nbsp;in<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;section&nbsp;4.2&nbsp;in&nbsp;array&nbsp;form&nbsp;as&nbsp;follows:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Word&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;Background&nbsp;probability<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;----------------------------------------<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;word&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;bp_1<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;|&nbsp;&nbsp;&nbsp;...<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;word&nbsp;|V|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;bp_|V|<br>
+&nbsp;&nbsp;&nbsp;&nbsp;model_feature:&nbsp;feature&nbsp;models&nbsp;estimated&nbsp;from&nbsp;explicit&nbsp;mention&nbsp;sections&nbsp;as&nbsp;described&nbsp;in&nbsp;section&nbsp;4.2<br>
+&nbsp;&nbsp;&nbsp;&nbsp;model_feature_matrix:&nbsp;feature&nbsp;models&nbsp;estimated&nbsp;from&nbsp;explicit&nbsp;mention&nbsp;sections&nbsp;as&nbsp;described&nbsp;in&nbsp;section&nbsp;4.2&nbsp;in<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;array&nbsp;form&nbsp;as&nbsp;follows:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Word/Feature&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;Feature&nbsp;1&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Feature&nbsp;|f|=k<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-----------------------------------------------------------<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;word&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;p(w1&nbsp;|&nbsp;f1)&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;p(w1&nbsp;|&nbsp;fk)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;....&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;word&nbsp;nw&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;p(w_|V|,&nbsp;fk)&nbsp;...&nbsp;....&nbsp;&nbsp;&nbsp;tm(w_|V|,&nbsp;fk)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;section_word_counts:&nbsp;word&nbsp;counts&nbsp;in&nbsp;each&nbsp;section&nbsp;as&nbsp;needed&nbsp;by&nbsp;the&nbsp;EM&nbsp;algorithm<br>
+&nbsp;&nbsp;&nbsp;&nbsp;section_word_counts_matrix:&nbsp;word&nbsp;counts&nbsp;in&nbsp;each&nbsp;section&nbsp;in&nbsp;matrix&nbsp;form&nbsp;as&nbsp;needed&nbsp;by&nbsp;the&nbsp;EM&nbsp;alg&nbsp;as&nbsp;follows:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Section/Word&nbsp;|&nbsp;word&nbsp;1&nbsp;...&nbsp;...&nbsp;...&nbsp;...&nbsp;word&nbsp;|V|<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;----------------------------------------------------------<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Section&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;count(s_1,w_1)&nbsp;...&nbsp;...&nbsp;&nbsp;count(s_1,&nbsp;w_|V|)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Section&nbsp;2&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;count(s_2,w_1)&nbsp;...&nbsp;...&nbsp;&nbsp;count(s_2,&nbsp;w_|V|)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Section&nbsp;m&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;count(s_m,&nbsp;w_1)...&nbsp;...&nbsp;&nbsp;count(s_m,&nbsp;w_|V|)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;vocabulary_lookup:&nbsp;a&nbsp;dictionary&nbsp;with<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;key:&nbsp;word&nbsp;id&nbsp;used&nbsp;in&nbsp;models,&nbsp;matrices,&nbsp;etc.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;value:&nbsp;actual&nbsp;word</tt></dd></dl>
+
+<dl><dt><a name="ParseAndModel-format_feature_list"><strong>format_feature_list</strong></a>(self) -&gt; pandas.core.frame.DataFrame</dt><dd><tt>This&nbsp;function&nbsp;takes&nbsp;a&nbsp;list&nbsp;of&nbsp;strings&nbsp;and/or&nbsp;lists&nbsp;of&nbsp;strings&nbsp;and&nbsp;converts&nbsp;them&nbsp;to&nbsp;a&nbsp;DataFrame&nbsp;with&nbsp;ids.&nbsp;Terms&nbsp;in<br>
+nested&nbsp;lists&nbsp;will&nbsp;be&nbsp;treated&nbsp;as&nbsp;synonyms&nbsp;and&nbsp;given&nbsp;the&nbsp;same&nbsp;feature&nbsp;id<br>
+&nbsp;<br>
+ex.&nbsp;feature_list&nbsp;=&nbsp;<a href="#ParseAndModel-format_feature_list">format_feature_list</a>(feature_list&nbsp;=&nbsp;["sound",&nbsp;"battery",&nbsp;["screen",&nbsp;"display"]])<br>
+&nbsp;<br>
+:return:&nbsp;DataFrame&nbsp;with&nbsp;integer&nbsp;ids&nbsp;for&nbsp;each&nbsp;feature,&nbsp;synonyms&nbsp;are&nbsp;grouped&nbsp;together<br>
+|&nbsp;feature&nbsp;(str)&nbsp;|&nbsp;feature_id&nbsp;(int)&nbsp;&nbsp;|&nbsp;feature_term_id&nbsp;(int)<br>
+feature:&nbsp;string&nbsp;representation&nbsp;of&nbsp;the&nbsp;feature<br>
+feature_id:&nbsp;integer&nbsp;id&nbsp;for&nbsp;the&nbsp;feature,&nbsp;will&nbsp;be&nbsp;the&nbsp;same&nbsp;for&nbsp;synonyms&nbsp;if&nbsp;input&nbsp;in&nbsp;nested&nbsp;list<br>
+feature_term_id:&nbsp;integer&nbsp;id&nbsp;for&nbsp;the&nbsp;feature,&nbsp;will&nbsp;be&nbsp;unique&nbsp;for&nbsp;each&nbsp;string,&nbsp;including&nbsp;synonyms</tt></dd></dl>
+
+<dl><dt><a name="ParseAndModel-read_annotated_data"><strong>read_annotated_data</strong></a>(self, filename:str, nlines:int=None, start_line:int=0, include_title_lines:bool=True) -&gt; dict</dt><dd><tt>&nbsp;Reads&nbsp;in&nbsp;Santu's&nbsp;annotated&nbsp;files&nbsp;and&nbsp;records&nbsp;the&nbsp;explicit&nbsp;features&nbsp;and&nbsp;implicit&nbsp;features&nbsp;annotated&nbsp;in&nbsp;the&nbsp;file<br>
+&nbsp;<br>
+&nbsp;ex.&nbsp;annotated_data&nbsp;=&nbsp;<a href="#ParseAndModel-read_annotated_data">read_annotated_data</a>(filename='demo_files/iPod.final',&nbsp;nlines=200)<br>
+&nbsp;ex.&nbsp;annotated_data&nbsp;=&nbsp;<a href="#ParseAndModel-read_annotated_data">read_annotated_data</a>(filename='demo_files/iPod.final',&nbsp;nlines=2)<br>
+&nbsp;<br>
+:param&nbsp;filename:&nbsp;Filename&nbsp;for&nbsp;the&nbsp;annotated&nbsp;data&nbsp;set<br>
+:param&nbsp;nlines:&nbsp;Maximum&nbsp;number&nbsp;of&nbsp;lines&nbsp;from&nbsp;the&nbsp;file&nbsp;to&nbsp;read&nbsp;or&nbsp;None&nbsp;to&nbsp;read&nbsp;all&nbsp;lines<br>
+:param&nbsp;start_line:&nbsp;Optional&nbsp;parameter,&nbsp;specific&nbsp;line&nbsp;number&nbsp;to&nbsp;start&nbsp;at,&nbsp;mostly&nbsp;for&nbsp;testing&nbsp;purposes<br>
+:param&nbsp;include_title_lines:&nbsp;Set&nbsp;to&nbsp;true&nbsp;to&nbsp;include&nbsp;lines&nbsp;as&nbsp;marked&nbsp;in&nbsp;title&nbsp;lines&nbsp;in&nbsp;the&nbsp;output,&nbsp;false&nbsp;otherwise<br>
+:return:&nbsp;a&nbsp;dictionary&nbsp;with&nbsp;the&nbsp;following&nbsp;data<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;section_list:&nbsp;DataFrame&nbsp;with&nbsp;the&nbsp;following&nbsp;form<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;doc_id&nbsp;(int)&nbsp;&nbsp;|&nbsp;section_id&nbsp;(int)&nbsp;&nbsp;|&nbsp;section_text&nbsp;(str)&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;title&nbsp;(bool)&nbsp;&nbsp;|<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;doc_id:&nbsp;integer&nbsp;id&nbsp;for&nbsp;the&nbsp;document<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;section_id:&nbsp;integer&nbsp;id&nbsp;for&nbsp;the&nbsp;section<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;section_text:&nbsp;cleaned&nbsp;(lowercase,&nbsp;trimmed)&nbsp;section&nbsp;text<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;title:&nbsp;True&nbsp;if&nbsp;the&nbsp;line&nbsp;is&nbsp;a&nbsp;title,&nbsp;False&nbsp;otherwise<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;feature_section_mapping:&nbsp;DataFrame<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;doc_id&nbsp;(int)&nbsp;&nbsp;|&nbsp;feature&nbsp;(str)&nbsp;|&nbsp;is_explicit&nbsp;(bool)&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;section_id&nbsp;(int)&nbsp;&nbsp;|<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;doc_id:&nbsp;integer&nbsp;id&nbsp;for&nbsp;the&nbsp;document<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;feature:&nbsp;the&nbsp;string&nbsp;form&nbsp;of&nbsp;the&nbsp;feature&nbsp;in&nbsp;the&nbsp;annotation<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;is_explicit:&nbsp;False&nbsp;if&nbsp;the&nbsp;feature&nbsp;was&nbsp;marked&nbsp;in&nbsp;the&nbsp;annotation&nbsp;as&nbsp;an&nbsp;implicit&nbsp;mention,&nbsp;True&nbsp;otherwise<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;section_id:&nbsp;integer&nbsp;id&nbsp;for&nbsp;the&nbsp;section<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;feature_list:&nbsp;dictionary&nbsp;with&nbsp;each&nbsp;feature&nbsp;and&nbsp;the&nbsp;number&nbsp;of&nbsp;sections&nbsp;it&nbsp;appears&nbsp;in<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;key:&nbsp;feature&nbsp;name<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;value:&nbsp;number&nbsp;of&nbsp;sections&nbsp;in&nbsp;which&nbsp;the&nbsp;feature&nbsp;appears</tt></dd></dl>
+
+<dl><dt><a name="ParseAndModel-read_file_data"><strong>read_file_data</strong></a>(self, filename:str, nlines:int=None, start_line:int=0) -&gt; dict</dt><dd><tt>Reads&nbsp;in&nbsp;un-annotated&nbsp;files&nbsp;expecting&nbsp;organization&nbsp;to&nbsp;be&nbsp;one&nbsp;document&nbsp;per&nbsp;line<br>
+&nbsp;<br>
+Sentence&nbsp;tokenizer&nbsp;will&nbsp;take&nbsp;care&nbsp;of&nbsp;splitting&nbsp;documents&nbsp;into&nbsp;sentences<br>
+&nbsp;<br>
+ex.&nbsp;parsed_data&nbsp;=&nbsp;<a href="#ParseAndModel-read_file_data">read_file_data</a>(filename='../tests/data/parse_and_model/oneLinePerDoc.txt',&nbsp;nlines=3)<br>
+&nbsp;<br>
+:param&nbsp;filename:&nbsp;Filename&nbsp;for&nbsp;the&nbsp;un-annotated&nbsp;data&nbsp;set<br>
+:param&nbsp;nlines:&nbsp;Maximum&nbsp;number&nbsp;of&nbsp;lines&nbsp;from&nbsp;the&nbsp;file&nbsp;to&nbsp;read&nbsp;or&nbsp;None&nbsp;to&nbsp;read&nbsp;all&nbsp;lines<br>
+:param&nbsp;start_line:&nbsp;Optional&nbsp;parameter,&nbsp;specific&nbsp;line&nbsp;number&nbsp;to&nbsp;start&nbsp;at,&nbsp;mostly&nbsp;for&nbsp;testing&nbsp;purposes<br>
+:return:&nbsp;a&nbsp;dictionary&nbsp;with&nbsp;the&nbsp;following&nbsp;data<br>
+&nbsp;&nbsp;&nbsp;&nbsp;section_list:&nbsp;DataFrame&nbsp;with&nbsp;the&nbsp;following&nbsp;form<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;doc_id&nbsp;(int)&nbsp;&nbsp;|&nbsp;section_id&nbsp;(int)&nbsp;&nbsp;|&nbsp;section_text&nbsp;(str)&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;title&nbsp;(bool)&nbsp;&nbsp;|<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;doc_id:&nbsp;integer&nbsp;id&nbsp;for&nbsp;the&nbsp;document<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;section_id:&nbsp;integer&nbsp;id&nbsp;for&nbsp;the&nbsp;section<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;section_text:&nbsp;cleaned&nbsp;(lowercase,&nbsp;trimmed)&nbsp;section&nbsp;text<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;title:&nbsp;True&nbsp;if&nbsp;the&nbsp;line&nbsp;is&nbsp;a&nbsp;title,&nbsp;False&nbsp;otherwise</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#55aa55">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><strong>LOWER</strong> = 66<br>
+<strong>ORTH</strong> = 65</td></tr></table>
+</body></html>

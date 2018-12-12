@@ -1,0 +1,110 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module feature_mining.em_vector_by_feature</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="feature_mining.html"><font color="#ffffff">feature_mining</font></a>.em_vector_by_feature</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:c%3A%5Cusers%5Cproject%20code%5Cfeature_mining%5Cem_vector_by_feature.py">c:\users\project code\feature_mining\em_vector_by_feature.py</a></font></td></tr></table>
+    <p></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="logging.html">logging</a><br>
+</td><td width="25%" valign=top><a href="numpy.html">numpy</a><br>
+</td><td width="25%" valign=top><a href="os.html">os</a><br>
+</td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="feature_mining.em_base.html#ExpectationMaximization">feature_mining.em_base.ExpectationMaximization</a>(<a href="builtins.html#object">builtins.object</a>)
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="feature_mining.em_vector_by_feature.html#EmVectorByFeature">EmVectorByFeature</a>
+</font></dt></dl>
+</dd>
+</dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="EmVectorByFeature">class <strong>EmVectorByFeature</strong></a>(<a href="feature_mining.em_base.html#ExpectationMaximization">feature_mining.em_base.ExpectationMaximization</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Vectorized&nbsp;implementation&nbsp;of&nbsp;EM&nbsp;algorithm.&nbsp;Loops&nbsp;over&nbsp;features.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd><a href="feature_mining.em_vector_by_feature.html#EmVectorByFeature">EmVectorByFeature</a></dd>
+<dd><a href="feature_mining.em_base.html#ExpectationMaximization">feature_mining.em_base.ExpectationMaximization</a></dd>
+<dd><a href="builtins.html#object">builtins.object</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="EmVectorByFeature-__init__"><strong>__init__</strong></a>(self, explicit_model:feature_mining.parse_and_model.ParseAndModel=None, lambda_background:float=0.7, max_iter:int=50, delta_threshold:float=1e-06, pi_init=None)</dt><dd><tt>Constructor&nbsp;for&nbsp;EM&nbsp;class&nbsp;(looping&nbsp;by&nbsp;feature)<br>
+&nbsp;<br>
+:param&nbsp;explicit_model:&nbsp;ParseAndModel&nbsp;object&nbsp;containing&nbsp;topic&nbsp;models,&nbsp;background&nbsp;model&nbsp;and&nbsp;word&nbsp;counts<br>
+:param&nbsp;lambda_background:&nbsp;Assumed&nbsp;P(&nbsp;background&nbsp;model)&nbsp;-&nbsp;probabilitiy&nbsp;that&nbsp;a&nbsp;word&nbsp;comes&nbsp;from&nbsp;the&nbsp;background&nbsp;distribution<br>
+:param&nbsp;max_iter:&nbsp;Maximum&nbsp;number&nbsp;of&nbsp;EM&nbsp;iterations&nbsp;to&nbsp;run&nbsp;if&nbsp;delta&nbsp;threshold&nbsp;is&nbsp;not&nbsp;reached<br>
+:param&nbsp;delta_threshold:&nbsp;Delta&nbsp;Pi&nbsp;threshold&nbsp;at&nbsp;which&nbsp;the&nbsp;EM&nbsp;algorithm&nbsp;will&nbsp;terminate<br>
+:param&nbsp;pi_init:&nbsp;Optional&nbsp;parameter&nbsp;to&nbsp;specify&nbsp;a&nbsp;specific&nbsp;parameter&nbsp;initialization&nbsp;for&nbsp;testing/debugging</tt></dd></dl>
+
+<dl><dt><a name="EmVectorByFeature-compute_cost"><strong>compute_cost</strong></a>(self)</dt><dd><tt>Calculates&nbsp;the&nbsp;amount&nbsp;of&nbsp;change&nbsp;between&nbsp;the&nbsp;last&nbsp;iteration's&nbsp;pi&nbsp;parameter&nbsp;values&nbsp;and&nbsp;the&nbsp;current&nbsp;iteration's&nbsp;pi<br>
+parameter&nbsp;values&nbsp;for&nbsp;comparison&nbsp;to&nbsp;the&nbsp;delta&nbsp;threshold.<br>
+&nbsp;<br>
+Total&nbsp;change&nbsp;is&nbsp;calculated&nbsp;as&nbsp;the&nbsp;sum&nbsp;of&nbsp;the&nbsp;squared&nbsp;differences&nbsp;between&nbsp;the&nbsp;two&nbsp;sets&nbsp;of&nbsp;parameters.<br>
+&nbsp;<br>
+:return:</tt></dd></dl>
+
+<dl><dt><a name="EmVectorByFeature-e_step"><strong>e_step</strong></a>(self)</dt><dd><tt>Vectorized&nbsp;e-step.<br>
+&nbsp;<br>
+Estimates&nbsp;value&nbsp;of&nbsp;hidden&nbsp;parameters&nbsp;based&nbsp;on&nbsp;current&nbsp;pi&nbsp;parameters<br>
+&nbsp;<br>
+:return:&nbsp;None</tt></dd></dl>
+
+<dl><dt><a name="EmVectorByFeature-import_data"><strong>import_data</strong></a>(self, explicit_model:feature_mining.parse_and_model.ParseAndModel=None)</dt><dd><tt>Takes&nbsp;a&nbsp;ParseAndModel&nbsp;object&nbsp;and&nbsp;saves&nbsp;the&nbsp;data&nbsp;for&nbsp;EM&nbsp;algorithm&nbsp;use<br>
+&nbsp;<br>
+:param&nbsp;explicit_model:&nbsp;A&nbsp;ParseAndModel&nbsp;object&nbsp;containing&nbsp;the&nbsp;necessary&nbsp;information&nbsp;for&nbsp;EM&nbsp;calculations<br>
+:return:&nbsp;None</tt></dd></dl>
+
+<dl><dt><a name="EmVectorByFeature-initialize_parameters"><strong>initialize_parameters</strong></a>(self, pi_init:numpy.ndarray=None)</dt><dd><tt>Initialize&nbsp;data&nbsp;for&nbsp;EM<br>
+&nbsp;<br>
+:param&nbsp;pi_init:&nbsp;Optional&nbsp;parameter&nbsp;to&nbsp;specify&nbsp;a&nbsp;specific&nbsp;parameter&nbsp;initialization&nbsp;for&nbsp;testing/debugging<br>
+:return:&nbsp;None</tt></dd></dl>
+
+<dl><dt><a name="EmVectorByFeature-m_step"><strong>m_step</strong></a>(self)</dt><dd><tt>Vectorized&nbsp;m-step.<br>
+&nbsp;<br>
+Re-estimates&nbsp;parameters&nbsp;based&nbsp;on&nbsp;current&nbsp;hidden&nbsp;parameter&nbsp;values<br>
+&nbsp;<br>
+&nbsp;:return:&nbsp;None</tt></dd></dl>
+
+<hr>
+Methods inherited from <a href="feature_mining.em_base.html#ExpectationMaximization">feature_mining.em_base.ExpectationMaximization</a>:<br>
+<dl><dt><a name="EmVectorByFeature-em"><strong>em</strong></a>(self)</dt><dd><tt>Default&nbsp;chain&nbsp;for&nbsp;e-m&nbsp;algorithm.<br>
+:return:&nbsp;pi&nbsp;matrix.</tt></dd></dl>
+
+<dl><dt><a name="EmVectorByFeature-em_loop"><strong>em_loop</strong></a>(self)</dt><dd><tt>Expectation&nbsp;maximization&nbsp;loop.<br>
+Executes&nbsp;e-step&nbsp;and&nbsp;m-step&nbsp;until&nbsp;a&nbsp;max&nbsp;number&nbsp;of&nbsp;iterations&nbsp;is&nbsp;reached<br>
+or&nbsp;until&nbsp;a&nbsp;delta&nbsp;between&nbsp;pi&nbsp;in&nbsp;two&nbsp;consecutive&nbsp;steps&nbsp;is&nbsp;less&nbsp;than&nbsp;a&nbsp;threshold.<br>
+:return:&nbsp;pi&nbsp;matrix</tt></dd></dl>
+
+<hr>
+Data descriptors inherited from <a href="feature_mining.em_base.html#ExpectationMaximization">feature_mining.em_base.ExpectationMaximization</a>:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+</td></tr></table></td></tr></table>
+</body></html>

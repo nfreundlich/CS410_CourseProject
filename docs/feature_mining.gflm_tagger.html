@@ -1,0 +1,73 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module feature_mining.gflm_tagger</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="feature_mining.html"><font color="#ffffff">feature_mining</font></a>.gflm_tagger</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:c%3A%5Cusers%5Cproject%20code%5Cfeature_mining%5Cgflm_tagger.py">c:\users\project code\feature_mining\gflm_tagger.py</a></font></td></tr></table>
+    <p></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="logging.html">logging</a><br>
+</td><td width="25%" valign=top><a href="numpy.html">numpy</a><br>
+</td><td width="25%" valign=top><a href="pandas.html">pandas</a><br>
+</td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="builtins.html#object">builtins.object</a>
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="feature_mining.gflm_tagger.html#GFLM">GFLM</a>
+</font></dt></dl>
+</dd>
+</dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="GFLM">class <strong>GFLM</strong></a>(<a href="builtins.html#object">builtins.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Implementation&nbsp;of&nbsp;gflm-word&nbsp;and&nbsp;gflm-section<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="GFLM-__init__"><strong>__init__</strong></a>(self, section_threshold:float=0.35, word_threshold:float=0.35, em_results:feature_mining.em_vector_by_feature.EmVectorByFeature=None, hidden_background=None, hidden_params=None, pi_matrix=None)</dt><dd><tt>Constructor&nbsp;for&nbsp;<a href="#GFLM">GFLM</a>.<br>
+:param&nbsp;section_threshold:&nbsp;Threshold&nbsp;for&nbsp;section.<br>
+:param&nbsp;word_threshold:&nbsp;Threshold&nbsp;for&nbsp;word.<br>
+:param&nbsp;em_results:&nbsp;EM&nbsp;<a href="builtins.html#object">object</a>&nbsp;with&nbsp;computed&nbsp;matrices<br>
+:param&nbsp;hidden_background:&nbsp;(if&nbsp;em_results&nbsp;not&nbsp;provided)&nbsp;hidden&nbsp;background&nbsp;matrix&nbsp;(section_no&nbsp;x&nbsp;V)<br>
+:param&nbsp;hidden_params:&nbsp;(if&nbsp;em_results&nbsp;not&nbsp;provided)&nbsp;list&nbsp;hidden&nbsp;params&nbsp;matrices&nbsp;(feat_no&nbsp;*&nbsp;(section_no&nbsp;x&nbsp;V))<br>
+:param&nbsp;pi_matrix:&nbsp;EM&nbsp;computed&nbsp;PI&nbsp;matrix&nbsp;(section_no&nbsp;x&nbsp;feat_no)</tt></dd></dl>
+
+<dl><dt><a name="GFLM-calc_gflm_section"><strong>calc_gflm_section</strong></a>(self, section_threshold:float=None)</dt><dd><tt>Compute&nbsp;<a href="#GFLM">GFLM</a>&nbsp;considering&nbsp;threshold&nbsp;at&nbsp;sentence.<br>
+:param&nbsp;section_threshold:&nbsp;threshold&nbsp;to&nbsp;be&nbsp;used&nbsp;for&nbsp;gflm&nbsp;section<br>
+:return:&nbsp;DataFrame&nbsp;holding&nbsp;mapping&nbsp;from&nbsp;section_id&nbsp;to&nbsp;implicit&nbsp;feature_id&nbsp;based&nbsp;on&nbsp;<a href="#GFLM">GFLM</a>&nbsp;section</tt></dd></dl>
+
+<dl><dt><a name="GFLM-calc_gflm_word"><strong>calc_gflm_word</strong></a>(self, word_threshold:float=None)</dt><dd><tt>Compute&nbsp;<a href="#GFLM">GFLM</a>&nbsp;word.<br>
+:param&nbsp;word_threshold:&nbsp;threshold&nbsp;to&nbsp;be&nbsp;used&nbsp;for&nbsp;gflm&nbsp;word<br>
+:return:&nbsp;DataFrame&nbsp;holding&nbsp;mapping&nbsp;from&nbsp;section_id&nbsp;to&nbsp;implicit&nbsp;feature_id&nbsp;based&nbsp;on&nbsp;<a href="#GFLM">GFLM</a>&nbsp;word</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+</td></tr></table></td></tr></table>
+</body></html>

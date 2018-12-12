@@ -9,8 +9,12 @@ class GFLM:
     """
     Implementation of gflm-word and gflm-section
     """
-    def __init__(self, section_threshold:float = 0.35, word_threshold:float = 0.35, em_results:EmVectorByFeature=None,
-                 hidden_background=None, hidden_params=None, pi_matrix=None):
+    def __init__(self, section_threshold:float = 0.35,
+                        word_threshold:float = 0.35,
+                        em_results:EmVectorByFeature=None,
+                        hidden_background=None,
+                        hidden_params=None,
+                        pi_matrix=None):
         """
         Constructor for GFLM.
         :param section_threshold: Threshold for section.

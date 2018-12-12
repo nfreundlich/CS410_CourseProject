@@ -131,7 +131,6 @@ class FeatureMining:
         # feature text equivalence
         feat_dict = {}
         for index, raw in feature_list.iterrows():
-            print(raw['feature'])
             feat_dict[raw['feature_id']] = raw['feature']
 
 

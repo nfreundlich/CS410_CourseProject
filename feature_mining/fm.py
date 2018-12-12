@@ -23,6 +23,8 @@ class FeatureMining:
         self.em = None
         self.gflm = None
         self.feature_list = None
+        self.gflm_section_result = None
+        self.gflm_word_result = None
 
     def load_data(self,
                   feature_list: list = None,
@@ -66,7 +68,15 @@ class FeatureMining:
 
         logging.info(">loading file:" + filename)
 
-        feature_list = ["sound", "battery", ["screen", "display"]]
+        feature_list = ["sound",
+                        "battery",
+                        ["screen", "display"],
+                        "storage",
+                        "size",
+                        "headphones",
+                        "software",
+                        "price",
+                        "button",]
         nlines = None
 
         if not full_set:
@@ -108,6 +118,41 @@ class FeatureMining:
         self.gflm.calc_gflm_section()
         self.gflm.calc_gflm_word()
 
+    def section_features(self):
+        """
+        Associates an implicit feature id with a specific section.
+        :return: None
+        """
+        section_list = self.pm.parsed_text['section_list'][['section_id', 'section_text']]
+        feature_list = self.pm.formatted_feature_list.drop_duplicates(subset=['feature_id'])
+        feature_list['implicit_feature_id'] = feature_list['feature_id']
+        gflm_word = self.gflm.gflm_word
+        gflm_section = self.gflm.gflm_section
+
+        # gflm_word
+        gflm_word_join = section_list.join(gflm_word,
+                                           lsuffix='_section_list',
+                                           rsuffix='_gflm_word')
+        gflm_word_join = gflm_word_join.dropna(subset=['implicit_feature_id'])
+        gflm_word_join['implicit_feature_id'] = gflm_word_join['implicit_feature_id'].astype(int)
+        gflm_word_join = gflm_word_join.join(feature_list, on='implicit_feature_id',
+                                             lsuffix='_gflm_word_join',
+                                             rsuffix='_feature_list')
+        gflm_word_join = gflm_word_join[['feature', 'section_text', 'gflm_word']]
+        self.gflm_word_result = gflm_word_join
+
+        # gflm_section
+        gflm_section_join = section_list.join(gflm_section, on='section_id',
+                                              lsuffix='_section_list',
+                                              rsuffix='_gflm_section')
+        gflm_section_join = gflm_section_join.dropna(subset=['implicit_feature_id'])
+        gflm_section_join['implicit_feature_id'] = gflm_section_join['implicit_feature_id'].astype(int)
+        gflm_section_join = gflm_section_join.join(feature_list, on='implicit_feature_id',
+                                                   lsuffix='_gflm_section_join',
+                                                   rsuffix='_feature_list')
+        gflm_section_join = gflm_section_join[['feature', 'section_text', 'gflm_section']]
+        self.gflm_section_result = gflm_section_join
+
     def usage(self):
         """
         Prints usage message.
@@ -135,5 +180,8 @@ if __name__ == '__main__':
     fm.load_ipod(full_set=False)
     fm.fit()
     fm.predict()
+    fm.section_features()
     print(fm.gflm.gflm_section.head(10))
     print(fm.gflm.gflm_word.head(10))
+    print(fm.gflm_section_result.sort_values(by=['gflm_section'], ascending=False)[['feature', 'section_text']].head(20))
+    print(fm.gflm_word_result.sort_values(by=['gflm_word'], ascending=False)[['feature', 'section_text']].head(20))

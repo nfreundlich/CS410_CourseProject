@@ -16,7 +16,7 @@ This package implements a Generative Feature Language Models for Mining Implicit
 pip install feature_mining
 ```
 
-## Usage
+## Sample Usage
     Usage:
         from feature_mining import FeatureMining
         fm = FeatureMining()
@@ -30,3 +30,9 @@ pip install feature_mining
 
 ## Package created based on the following paper
 S. Karmaker Santu, P. Sondhi and C. Zhai, "Generative Feature Language Models for Mining Implicit Features from Customer Reviews", Proceedings of the 25th ACM International on Conference on Information and Knowledge Management - CIKM '16, 2016.
+
+## Pydocs (Code Documentation)
+Accessible via this link: http://htmlpreview.github.io/?https://github.com/nfreundlich/CS410_CourseProject/blob/hannah/docs/feature_mining.html
+
+## Tutorial
+See Jupyter notebook tutorial https://github.com/nfreundlich/CS410_CourseProject/blob/dev/tutorial.ipynb

@@ -1,0 +1,83 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module feature_mining.em_base</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="feature_mining.html"><font color="#ffffff">feature_mining</font></a>.em_base</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:c%3A%5Cusers%5Cproject%20code%5Cfeature_mining%5Cem_base.py">c:\users\project code\feature_mining\em_base.py</a></font></td></tr></table>
+    <p></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="time.html">time</a><br>
+</td><td width="25%" valign=top></td><td width="25%" valign=top></td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="builtins.html#object">builtins.object</a>
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="feature_mining.em_base.html#ExpectationMaximization">ExpectationMaximization</a>
+</font></dt></dl>
+</dd>
+</dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="ExpectationMaximization">class <strong>ExpectationMaximization</strong></a>(<a href="builtins.html#object">builtins.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Base&nbsp;class&nbsp;for&nbsp;Expectation&nbsp;-&nbsp;Maximization&nbsp;algorithm.<br>
+Treats&nbsp;data&nbsp;preparation,&nbsp;looping,&nbsp;e-step&nbsp;and&nbsp;m-step.<br>
+&nbsp;<br>
+Usage:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;em&nbsp;=&nbsp;<a href="#ExpectationMaximization">ExpectationMaximization</a>()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;em.<a href="#ExpectationMaximization-em">em</a>()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="ExpectationMaximization-__init__"><strong>__init__</strong></a>(self, dump_path='../tests/data/em_01/')</dt><dd><tt>Constructor<br>
+:param&nbsp;dump_path:&nbsp;path&nbsp;to&nbsp;save&nbsp;temporary&nbsp;files.&nbsp;Mostly&nbsp;used&nbsp;for&nbsp;testing.</tt></dd></dl>
+
+<dl><dt><a name="ExpectationMaximization-compute_cost"><strong>compute_cost</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="ExpectationMaximization-e_step"><strong>e_step</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="ExpectationMaximization-em"><strong>em</strong></a>(self)</dt><dd><tt>Default&nbsp;chain&nbsp;for&nbsp;e-m&nbsp;algorithm.<br>
+:return:&nbsp;pi&nbsp;matrix.</tt></dd></dl>
+
+<dl><dt><a name="ExpectationMaximization-em_loop"><strong>em_loop</strong></a>(self)</dt><dd><tt>Expectation&nbsp;maximization&nbsp;loop.<br>
+Executes&nbsp;e-step&nbsp;and&nbsp;m-step&nbsp;until&nbsp;a&nbsp;max&nbsp;number&nbsp;of&nbsp;iterations&nbsp;is&nbsp;reached<br>
+or&nbsp;until&nbsp;a&nbsp;delta&nbsp;between&nbsp;pi&nbsp;in&nbsp;two&nbsp;consecutive&nbsp;steps&nbsp;is&nbsp;less&nbsp;than&nbsp;a&nbsp;threshold.<br>
+:return:&nbsp;pi&nbsp;matrix</tt></dd></dl>
+
+<dl><dt><a name="ExpectationMaximization-import_data"><strong>import_data</strong></a>(self)</dt><dd><tt>Imports&nbsp;data&nbsp;from&nbsp;annotated&nbsp;text.<br>
+:return:</tt></dd></dl>
+
+<dl><dt><a name="ExpectationMaximization-initialize_parameters"><strong>initialize_parameters</strong></a>(self)</dt><dd><tt>Creates&nbsp;parameters&nbsp;for&nbsp;model&nbsp;computation.<br>
+:return:</tt></dd></dl>
+
+<dl><dt><a name="ExpectationMaximization-m_step"><strong>m_step</strong></a>(self)</dt></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+</td></tr></table></td></tr></table>
+</body></html>

@@ -36,7 +36,9 @@ pip install feature_mining
 S. Karmaker Santu, P. Sondhi and C. Zhai, "Generative Feature Language Models for Mining Implicit Features from Customer Reviews", Proceedings of the 25th ACM International on Conference on Information and Knowledge Management - CIKM '16, 2016.
 
 ## Pydocs (Code Documentation)
-Accessible via this link: http://htmlpreview.github.io/?https://github.com/nfreundlich/CS410_CourseProject/blob/hannah/docs/feature_mining.html
+Accessible via this link: http://htmlpreview.github.io/?https://github.com/nfreundlich/CS410_CourseProject/blob/dev/docs/feature_mining.html
+
+(Apologies for the color scheme - it was the default)
 
 ## Tutorial
 See Jupyter notebook tutorial https://github.com/nfreundlich/CS410_CourseProject/blob/dev/tutorial.ipynb
@@ -46,3 +48,6 @@ Link to YouTube: https://www.youtube.com/watch?v=mjJHkyrkxHM
 
 ## Package on PyPi
 https://pypi.org/project/feature-mining/
+
+## Slides
+https://github.com/nfreundlich/CS410_CourseProject/tree/dev/docs

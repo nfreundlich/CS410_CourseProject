@@ -50,4 +50,4 @@ Link to YouTube: https://www.youtube.com/watch?v=mjJHkyrkxHM
 https://pypi.org/project/feature-mining/
 
 ## Slides
-https://github.com/nfreundlich/CS410_CourseProject/tree/dev/docs
+https://github.com/nfreundlich/CS410_CourseProject/blob/dev/docs/CS_410_GFLM_Slides.pdf

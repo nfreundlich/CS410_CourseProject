@@ -40,3 +40,6 @@ Accessible via this link: http://htmlpreview.github.io/?https://github.com/nfreu
 
 ## Tutorial
 See Jupyter notebook tutorial https://github.com/nfreundlich/CS410_CourseProject/blob/dev/tutorial.ipynb
+
+## Slides
+https://docs.google.com/presentation/d/1YFC_PF4Pxs67fkh_JBPQn4YeYYuW90BfoIOTfPGmvw0/edit?usp=sharing

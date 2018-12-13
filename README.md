@@ -51,3 +51,7 @@ https://pypi.org/project/feature-mining/
 
 ## Slides
 https://github.com/nfreundlich/CS410_CourseProject/blob/dev/docs/CS_410_GFLM_Slides.pdf
+
+## Known Issues
+Explicit feature mentions not removed from GFLM word/sentence:
+https://github.com/nfreundlich/CS410_CourseProject/issues/28

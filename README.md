@@ -37,6 +37,7 @@ S. Karmaker Santu, P. Sondhi and C. Zhai, "Generative Feature Language Models fo
 
 ## Pydocs (Code Documentation)
 Accessible via this link: http://htmlpreview.github.io/?https://github.com/nfreundlich/CS410_CourseProject/blob/dev/docs/feature_mining.html
+
 (Apologies for the color scheme - it was the default)
 
 ## Tutorial

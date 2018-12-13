@@ -43,5 +43,11 @@ Accessible via this link: http://htmlpreview.github.io/?https://github.com/nfreu
 ## Tutorial
 See Jupyter notebook tutorial https://github.com/nfreundlich/CS410_CourseProject/blob/dev/tutorial.ipynb
 
+## Video presentation and tutorial
+Link to YouTube: https://www.youtube.com/watch?v=mjJHkyrkxHM
+
+## Package on PyPi
+https://pypi.org/project/feature-mining/
+
 ## Slides
-https://docs.google.com/presentation/d/1YFC_PF4Pxs67fkh_JBPQn4YeYYuW90BfoIOTfPGmvw0/edit?usp=sharing
+https://github.com/nfreundlich/CS410_CourseProject/tree/dev/docs

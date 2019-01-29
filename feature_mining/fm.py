@@ -114,7 +114,8 @@ class FeatureMining:
         :return: None
         """
         logging.info(type(self).__name__, "- predict...")
-        self.gflm = GFLM(em_results=self.em, section_threshold=0.35, word_threshold=0.35)
+        self.gflm = GFLM(em_results=self.em, section_threshold=0.35, word_threshold=0.35,
+                         explicit_feature_mapping=self.pm.model_results["feature_section_mapping"])
         self.gflm.calc_gflm_section()
         self.gflm.calc_gflm_word()
 

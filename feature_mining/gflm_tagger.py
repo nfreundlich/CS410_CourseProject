@@ -14,7 +14,8 @@ class GFLM:
                         em_results:EmVectorByFeature=None,
                         hidden_background=None,
                         hidden_params=None,
-                        pi_matrix=None):
+                        pi_matrix=None,
+                        explicit_feature_mapping=None):
         """
         Constructor for GFLM.
         :param section_threshold: Threshold for section.
@@ -23,6 +24,7 @@ class GFLM:
         :param hidden_background: (if em_results not provided) hidden background matrix (section_no x V)
         :param hidden_params: (if em_results not provided) list hidden params matrices (feat_no * (section_no x V))
         :param pi_matrix: EM computed PI matrix (section_no x feat_no)
+        :param explicit_feature_mapping: DataFrame containing the mappings from section id to explicit features
         """
 
         # TODO: [nfr] check if this is needed in release workflow
@@ -37,6 +39,11 @@ class GFLM:
             self.hidden_background = hidden_background
             self.hidden_params = hidden_params
             self.pi_matrix = pi_matrix
+
+        if explicit_feature_mapping is not None:
+            self.explicit_feature_mapping = explicit_feature_mapping
+        else:
+            logging.warning("Explicit feature mapping not provided")
 
         self.f = self.pi_matrix.shape[1]
         self.section_threshold = section_threshold
@@ -73,13 +80,28 @@ class GFLM:
             gflm_vals['section_id'] = gflm_vals.index.values
             gflm_vals['implicit_feature_id'] = feature
             gflm_vals.columns = ['gflm_word', 'section_id', 'implicit_feature_id']
-            #
+
             if feature == 0:
                  self.gflm_word_all = gflm_vals
                  self.gflm_word = gflm_vals[gflm_vals.gflm_word >= word_threshold]
             else:
                 self.gflm_word_all = pd.concat([self.gflm_word_all, gflm_vals])
-                self.gflm_word = pd.concat([self.gflm_word,gflm_vals[gflm_vals.gflm_word >= word_threshold]])
+                #self.gflm_word = pd.concat([self.gflm_word,gflm_vals[(gflm_vals.gflm_word >= word_threshold) & (gflm_vals.explicit_feature_id.isnull())]])
+
+        # Add in info about known explicit features
+        merged_data = pd.merge(self.gflm_word_all, self.explicit_feature_mapping, how='outer',
+                               left_on=['section_id', 'implicit_feature_id'],
+                               right_on=['section_id', 'explicit_feature_id'])
+
+        # Correct NaNs to None
+        gflm_vals = merged_data.where((pd.notnull(merged_data)), None)
+        self.gflm_word_all = gflm_vals
+
+        self.gflm_word = self.gflm_word_all
+        self.gflm_word = gflm_vals[
+            (gflm_vals.gflm_word >= word_threshold) & (gflm_vals.explicit_feature_id.isnull())]
+
+        self.gflm_word = self.gflm_word[['gflm_word', 'section_id', 'implicit_feature_id']]
 
         self.gflm_word = self.gflm_word.reset_index(drop=True)
         self.gflm_word_all = self.gflm_word_all.reset_index(drop = True)
@@ -103,8 +125,17 @@ class GFLM:
         gflm_vals = gflm_vals[['gflm_section', 'section_id', 'implicit_feature_id']]
         gflm_vals["implicit_feature_id"] = pd.to_numeric(gflm_vals["implicit_feature_id"])
 
+        # Add in info about known explicit features
+        merged_data = pd.merge(gflm_vals, self.explicit_feature_mapping, how='outer',
+                               left_on=['section_id', 'implicit_feature_id'],
+                               right_on=['section_id', 'explicit_feature_id'])
+
+        # Correct NaNs to None
+        gflm_vals = merged_data.where((pd.notnull(merged_data)), None)
+
         self.gflm_section_all = gflm_vals
-        self.gflm_section = gflm_vals[gflm_vals.gflm_section >= section_threshold]
+        self.gflm_section = gflm_vals[(gflm_vals.gflm_section >= section_threshold) & (gflm_vals.explicit_feature_id.isnull())]
+        self.gflm_section = self.gflm_section[['gflm_section','section_id', 'implicit_feature_id']]
 
         self.gflm_section = self.gflm_section.reset_index(drop=True)
         self.gflm_section_all = self.gflm_section_all.reset_index(drop=True)

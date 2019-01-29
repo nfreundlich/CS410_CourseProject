@@ -386,6 +386,11 @@ class ParseAndModel:
             vocabulary_lookup: a dictionary with
                 key: word id used in models, matrices, etc.
                 value: actual word
+            feature_section_mapping: a data frame with the mapping between explicit features and sections
+                explicit_feature_id     | section_id
+                ---------------------------------------
+                explicit feature id 1   | section id 1
+                explicit feature id 2   | section id 2
         """
         logging.info("Building explicit models.")
         text_set = self.parsed_text["section_list"]
@@ -470,7 +475,7 @@ class ParseAndModel:
                         found_features.add(row_f["feature_id"])
 
                     # record that feature was explicitly found
-                    feature_section_mapping.append({"section_id": row["section_id"], "feature_id": row_f["feature_id"]})
+                    feature_section_mapping.append({"section_id": row["section_id"], "explicit_feature_id": row_f["feature_id"]})
 
                     # if we only count each word once
                     # feature_word_counter[row_f["feature_id"]].update(current_section_word_counts.keys())
@@ -561,7 +566,7 @@ class ParseAndModel:
         return dict(model_background=model_background, model_feature=model_feature,
                     section_word_counts_matrix=csr_matrix(section_word_counts_matrix),
                     model_background_matrix=model_background_matrix, model_feature_matrix=model_feature_matrix,
-                    vocabulary_lookup=vocabulary_lookup)
+                    vocabulary_lookup=vocabulary_lookup, feature_section_mapping =pd.DataFrame(feature_section_mapping))
 
     # TODO: Try metapy impelementation (should mostly be a swap of the NLP call)
     def build_explicit_models_metapy(text_set: pd.DataFrame, feature_set: pd.DataFrame,

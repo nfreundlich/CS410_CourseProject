@@ -28,29 +28,35 @@ class TestGFLM(TestCase):
         hidden_params[0] = csr_matrix(np.array([[.5, .4, .1], [.9, .8, .3]]))
         hidden_params[1] = csr_matrix(np.array([[.5, .6, .9], [.1, .2, .7]]))
 
-        gflm = GFLM(hidden_params=hidden_params, hidden_background=hidden_background, pi_matrix=pi_matrix)
+        explicit_feature_mapping = pd.DataFrame(columns=["explicit_feature_id", "section_id"])
+
+        gflm = GFLM(hidden_params=hidden_params, hidden_background=hidden_background, pi_matrix=pi_matrix,
+                    explicit_feature_mapping=explicit_feature_mapping)
         gflm.calc_gflm_section()
         gflm.calc_gflm_word()
 
-        expected_gflm_word_all = pd.DataFrame([[0.16, 0, 0], [.81, 1, 0], [.81, 0, 1], [.49, 1, 1]],
-                                              columns=["gflm_word", "section_id", "implicit_feature_id"])
+        expected_gflm_word_all = pd.DataFrame(
+            [[0.16, 0, 0, None], [.81, 1, 0, None], [.81, 0, 1, None], [.49, 1, 1, None]],
+            columns=["gflm_word", "section_id", "implicit_feature_id", "explicit_feature_id"])
         expected_gflm_word = pd.DataFrame([[.81, 1, 0], [.81, 0, 1], [.49, 1, 1]],
                                           columns=["gflm_word", "section_id", "implicit_feature_id"])
 
-        expected_gflm_section_all = pd.DataFrame([[0.3, 0, 0], [.6, 1, 0], [.7, 0, 1], [.4, 1, 1]],
-                                                 columns=["gflm_section", "section_id", "implicit_feature_id"])
+        expected_gflm_section_all = pd.DataFrame(
+            [[0.3, 0, 0, None], [.6, 1, 0, None], [.7, 0, 1, None], [.4, 1, 1, None]],
+            columns=["gflm_section", "section_id", "implicit_feature_id", "explicit_feature_id"])
         expected_gflm_section = pd.DataFrame([[.6, 1, 0], [.7, 0, 1], [.4, 1, 1]],
                                              columns=["gflm_section", "section_id", "implicit_feature_id"])
 
+        expected_gflm_word_all.fillna(value=pd.np.nan, inplace=True)
+        gflm.gflm_word_all.fillna(value=pd.np.nan, inplace=True)
+
         self.assertEqual(True, pd.DataFrame.equals(expected_gflm_word, np.round(gflm.gflm_word, 2)),
                          msg="GFLM word mismatch")
-        self.assertEqual(True, pd.DataFrame.equals(expected_gflm_word_all, np.round(gflm.gflm_word_all, 2)),
-                         msg="GFLM word all mismatch")
+        pd.util.testing.assert_frame_equal(expected_gflm_word_all, np.round(gflm.gflm_word_all, 2))
 
         self.assertEqual(True, pd.DataFrame.equals(expected_gflm_section, gflm.gflm_section),
                          msg="GFLM section mismatch")
-        self.assertEqual(True, pd.DataFrame.equals(expected_gflm_section_all, gflm.gflm_section_all),
-                         msg="GFLM section all mismatch")
+        pd.util.testing.assert_frame_equal(expected_gflm_section_all, gflm.gflm_section_all)
 
     def test_against_original_1_50_iteration(self):
 
@@ -106,7 +112,8 @@ class TestGFLM(TestCase):
         em.em_loop()
 
         # Calculate GFLM
-        gflm = GFLM(em_results=em, section_threshold=0.35, word_threshold=0.35)
+        gflm = GFLM(em_results=em, section_threshold=0.35, word_threshold=0.35,
+                    explicit_feature_mapping=pm_inst.model_results["feature_section_mapping"])
         gflm.calc_gflm_section()
         gflm.calc_gflm_word()
 
@@ -116,11 +123,12 @@ class TestGFLM(TestCase):
             review_sections = review_sections[review_sections.doc_id == review_id]
             section_og_id = 0
             for section_index, section_row in review_sections.iterrows():
-                for feature_id in range(0, max(gflm.gflm_word_all.implicit_feature_id)+1):
+                for feature_id in range(0, max(gflm.gflm_word_all.implicit_feature_id) + 1):
                     feature_name_row = pm_inst.formatted_feature_list[
                         pm_inst.formatted_feature_list.feature_id == feature_id]
                     feature_name_row = feature_name_row.reset_index(drop=True)
-                    actual_param_data = gflm.gflm_word_all[(gflm.gflm_word_all.section_id == section_index) & (gflm.gflm_word_all.implicit_feature_id == feature_id)]
+                    actual_param_data = gflm.gflm_word_all[(gflm.gflm_word_all.section_id == section_index) & (
+                                gflm.gflm_word_all.implicit_feature_id == feature_id)]
                     actual_param_data = actual_param_data.reset_index(drop=True)
                     actual_param = actual_param_data.loc[0].gflm_word
 
@@ -130,11 +138,29 @@ class TestGFLM(TestCase):
                         word_probs.append(probability[feature_name_row["feature"][0]])
                     original_param = max(word_probs)
 
-                    print("checking GFLM word probs - section:" + str(section_index), ", feature=" + str(feature_id))
+                    print("checking GFLM word probs -   section:" + str(section_index), ", feature=" + str(feature_id))
                     self.assertEqual(round(actual_param, 8), round(original_param, 8),
                                      msg="feature=" + str(feature_name_row["feature"][0]) +
                                          ", section= " + str(section_index) + ", a=" + str(
                                          actual_param) + ", e=" + str(original_param))
+
+                    print("checking GFLM word results - section:" + str(section_index), ", feature=" + str(feature_id))
+                    actual_param_data = gflm.gflm_word[
+                        (gflm.gflm_word.section_id == section_index) & (
+                                gflm.gflm_word.implicit_feature_id == feature_id)]
+
+                    if actual_param_data.shape[0] > 0:
+                        # feature present in actual results set, check for feature in original results set
+                        self.assertTrue(feature_name_row["feature"][0] in gflm_word_results[review_id][section_og_id],
+                                        msg="feature=" + str(feature_name_row["feature"][0]) +
+                                            ", section= " + str(section_index) + " feature not found in original set")
+                    else:
+                        # feature not present, make sure feature doesn't exist in original results set
+                        self.assertTrue(
+                            feature_name_row["feature"][0] not in gflm_word_results[review_id][section_og_id],
+                            msg="feature=" + str(feature_name_row["feature"][0]) +
+                                ", section= " + str(
+                                section_index) + " feature found in original set but not actual set")
 
                 section_og_id += 1
 
@@ -144,21 +170,42 @@ class TestGFLM(TestCase):
             review_sections = review_sections[review_sections.doc_id == review_id]
             section_og_id = 0
             for section_index, section_row in review_sections.iterrows():
-                for feature_id in range(0, max(gflm.gflm_word_all.implicit_feature_id)+1):
+                for feature_id in range(0, max(gflm.gflm_word_all.implicit_feature_id) + 1):
                     feature_name_row = pm_inst.formatted_feature_list[
                         pm_inst.formatted_feature_list.feature_id == feature_id]
                     feature_name_row = feature_name_row.reset_index(drop=True)
-                    actual_param_data = gflm.gflm_section_all[(gflm.gflm_section_all.section_id == section_index) & (gflm.gflm_section_all.implicit_feature_id == feature_id)]
+                    actual_param_data = gflm.gflm_section_all[(gflm.gflm_section_all.section_id == section_index) & (
+                                gflm.gflm_section_all.implicit_feature_id == feature_id)]
                     actual_param_data = actual_param_data.reset_index(drop=True)
                     actual_param = actual_param_data.loc[0].gflm_section
 
                     original_param = gflm_sentence_probs[review_id][section_og_id][feature_name_row["feature"][0]]
 
-                    print("checking GFLM section probs - section:" + str(section_index), ", feature=" + str(feature_id))
+                    print("checking GFLM section probs -   section:" + str(section_index),
+                          ", feature=" + str(feature_id))
                     self.assertEqual(round(actual_param, 8), round(original_param, 8),
                                      msg="feature=" + str(feature_name_row["feature"][0]) +
                                          ", section= " + str(section_index) + ", a=" + str(
                                          actual_param) + ", e=" + str(original_param))
+
+                    print("checking GFLM section results - section:" + str(section_index),
+                          ", feature=" + str(feature_id))
+                    actual_param_data = gflm.gflm_section[(gflm.gflm_section.section_id == section_index) & (
+                            gflm.gflm_section.implicit_feature_id == feature_id)]
+
+                    if actual_param_data.shape[0] > 0:
+                        # feature present in actual results set, check for feature in original results set
+                        self.assertTrue(
+                            feature_name_row["feature"][0] in gflm_sentence_results[review_id][section_og_id],
+                            msg="feature=" + str(feature_name_row["feature"][0]) +
+                                ", section= " + str(section_index) + " feature not found in original set")
+                    else:
+                        # feature not present, make sure feature doesn't exist in original results set
+                        self.assertTrue(
+                            feature_name_row["feature"][0] not in gflm_sentence_results[review_id][section_og_id],
+                            msg="feature=" + str(feature_name_row["feature"][0]) +
+                                ", section= " + str(
+                                section_index) + " feature found in original set but not actual set")
 
                 section_og_id += 1
 

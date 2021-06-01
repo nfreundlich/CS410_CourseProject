@@ -32,7 +32,7 @@ REQUIRED = ["spacy==2.0.16",
             "toolz==0.9.0",
             "tqdm==4.28.1",
             "ujson==1.35",
-            "urllib3==1.24.1",
+            "urllib3==1.26.5",
             "wrapt==1.10.11",
             ]
 

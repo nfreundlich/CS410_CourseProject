@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 REQUIRED = ["spacy==2.0.16",
             "nltk",
-            "certifi==2018.10.15",
+            "certifi==2022.12.7",
             "chardet==3.0.4",
             "cymem==2.0.2",
             "cytoolz==0.9.0.1",
